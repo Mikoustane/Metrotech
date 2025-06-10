@@ -263,7 +263,7 @@ const NewsManager: React.FC = () => {
       <div className="space-y-4">
         {news.length === 0 ? (
           <AnimatedCard className="text-center py-12">
-            <Calendar className="mx-auto text-gray-600 mb-4" size={48} />
+            <Calendar className="mx-auto text-gray-600 mb-4\" size={48} />
             <h3 className="text-xl font-semibold text-gray-400 mb-2">
               Aucune actualité
             </h3>
