@@ -4,9 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
 import Dashboard from './Dashboard';
 import AdminDashboard from './AdminDashboard';
-import MesFormulaires from './MesFormulaires';
+import FormManager from './FormManager';
 import Historique from './Historique';
 import Sauvegarde from './Sauvegarde';
+import ConnectionTracker from './ConnectionTracker';
+import SettingsManager from './SettingsManager';
 
 const InternalApp: React.FC = () => {
   const [activeSection, setActiveSection] = useState('accueil');
@@ -21,11 +23,16 @@ const InternalApp: React.FC = () => {
         // Si l'utilisateur est admin (ID = 1), afficher le dashboard admin
         return isAdmin ? <AdminDashboard /> : <Dashboard />;
       case 'formulaires':
-        return <MesFormulaires />;
+        return <FormManager />;
       case 'historique':
         return <Historique />;
       case 'sauvegarde':
         return <Sauvegarde />;
+      case 'connexions':
+        // Seulement accessible aux admins
+        return isAdmin ? <ConnectionTracker /> : <Dashboard />;
+      case 'parametres':
+        return <SettingsManager />;
       default:
         return isAdmin ? <AdminDashboard /> : <Dashboard />;
     }

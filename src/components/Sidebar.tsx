@@ -11,7 +11,10 @@ import {
   Settings,
   Bell,
   Menu,
-  X
+  X,
+  FormInput,
+  Globe,
+  Shield
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -25,11 +28,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Vérifier si l'utilisateur est admin
+  const isAdmin = user?.id === '1';
+
   const menuItems = [
     { id: 'accueil', label: 'Accueil', icon: Home, badge: null, shortLabel: 'Home' },
-    { id: 'formulaires', label: 'Mes Formulaires', icon: FileText, badge: 'Nouveau', shortLabel: 'Forms' },
+    { id: 'formulaires', label: 'Formulaires', icon: FormInput, badge: 'Nouveau', shortLabel: 'Forms' },
     { id: 'historique', label: 'Historique', icon: History, badge: null, shortLabel: 'History' },
     { id: 'sauvegarde', label: 'Sauvegarde', icon: Save, badge: '3', shortLabel: 'Save' },
+    ...(isAdmin ? [
+      { id: 'connexions', label: 'Connexions IP', icon: Globe, badge: null, shortLabel: 'IP' },
+      { id: 'parametres', label: 'Paramètres', icon: Settings, badge: null, shortLabel: 'Settings' }
+    ] : [])
   ];
 
   // Fermer le menu mobile quand on change de section
@@ -114,7 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
                 
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-light/20 rounded-full flex items-center justify-center">
-                    <User size={20} className="text-light" />
+                    {isAdmin ? <Shield size={20} className="text-light" /> : <User size={20} className="text-light" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-light font-medium text-sm truncate">{user?.name}</p>
@@ -159,18 +169,22 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
                   })}
                 </ul>
 
-                {/* Settings */}
-                <div className="mt-8 pt-4 border-t border-dark-700">
-                  <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-dark-700 hover:text-light rounded-lg transition-all duration-200 touch-manipulation">
-                    <Bell size={20} />
-                    <span className="font-medium">Notifications</span>
-                    <span className="ml-auto w-2 h-2 bg-red-500 rounded-full"></span>
-                  </button>
-                  <button className="w-full flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-dark-700 hover:text-light rounded-lg transition-all duration-200 touch-manipulation">
-                    <Settings size={20} />
-                    <span className="font-medium">Paramètres</span>
-                  </button>
-                </div>
+                {/* Settings pour non-admin */}
+                {!isAdmin && (
+                  <div className="mt-8 pt-4 border-t border-dark-700">
+                    <button 
+                      onClick={() => handleMenuItemClick('parametres')}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 touch-manipulation ${
+                        activeSection === 'parametres'
+                          ? 'bg-primary-500 text-light shadow-mobile'
+                          : 'text-gray-300 hover:bg-dark-700 hover:text-light'
+                      }`}
+                    >
+                      <Settings size={20} />
+                      <span className="font-medium">Paramètres</span>
+                    </button>
+                  </div>
+                )}
               </nav>
 
               {/* Logout */}
@@ -219,7 +233,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
           transition={{ delay: 0.3 }}
         >
           <div className="w-10 h-10 bg-primary-500 rounded-full flex items-center justify-center flex-shrink-0">
-            <User size={18} className="text-light" />
+            {isAdmin ? <Shield size={18} className="text-light" /> : <User size={18} className="text-light" />}
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
@@ -290,20 +304,22 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
           })}
         </ul>
 
-        {/* Settings */}
-        {!isCollapsed && (
+        {/* Settings pour non-admin */}
+        {!isAdmin && !isCollapsed && (
           <motion.div 
             className="mt-8 pt-4 border-t border-dark-700"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
           >
-            <button className="w-full flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-dark-700 hover:text-light rounded-lg transition-all duration-200 text-sm">
-              <Bell size={16} className="flex-shrink-0" />
-              <span className="font-medium flex-1 text-left">Notifications</span>
-              <span className="ml-auto w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></span>
-            </button>
-            <button className="w-full flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-dark-700 hover:text-light rounded-lg transition-all duration-200 text-sm">
+            <button 
+              onClick={() => setActiveSection('parametres')}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-sm ${
+                activeSection === 'parametres'
+                  ? 'bg-primary-500 text-light shadow-mobile'
+                  : 'text-gray-300 hover:bg-dark-700 hover:text-light'
+              }`}
+            >
               <Settings size={16} className="flex-shrink-0" />
               <span className="font-medium flex-1 text-left">Paramètres</span>
             </button>

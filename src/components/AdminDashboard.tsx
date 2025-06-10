@@ -25,7 +25,6 @@ import { useAuth } from '../context/AuthContext';
 import AnimatedCard from './ui/AnimatedCard';
 import ProgressBar from './ui/ProgressBar';
 import NewsManager from './NewsManager';
-import FormBuilder from './FormBuilder';
 import { USERS } from '../data/users';
 
 interface VisitStats {
@@ -132,6 +131,7 @@ const AdminDashboard: React.FC = () => {
       forms: localStorage.getItem('metrotech_drafts'),
       completed: localStorage.getItem('metrotech_completed'),
       news: localStorage.getItem('metrotech_news'),
+      connections: localStorage.getItem('metrotech_connections'),
       timestamp: new Date().toISOString()
     };
 
@@ -179,16 +179,13 @@ const AdminDashboard: React.FC = () => {
 
   const tabs = [
     { id: 'dashboard', label: 'Tableau de bord', icon: BarChart3 },
-    { id: 'news', label: 'Actualités', icon: Newspaper },
-    { id: 'forms', label: 'Formulaires', icon: FormInput }
+    { id: 'news', label: 'Actualités', icon: Newspaper }
   ];
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'news':
         return <NewsManager />;
-      case 'forms':
-        return <FormBuilder />;
       default:
         return (
           <div className="space-y-6">
@@ -438,13 +435,13 @@ const AdminDashboard: React.FC = () => {
                 </motion.button>
                 
                 <motion.button 
-                  onClick={() => setActiveTab('forms')}
+                  onClick={() => window.open('/login', '_blank')}
                   className="bg-light/10 hover:bg-light/20 text-light p-4 rounded-lg transition-all text-center touch-manipulation"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
                   <FileText size={24} className="mb-2 mx-auto" />
-                  <span className="block font-medium text-sm">Créer formulaire</span>
+                  <span className="block font-medium text-sm">Voir site public</span>
                 </motion.button>
               </div>
             </AnimatedCard>
