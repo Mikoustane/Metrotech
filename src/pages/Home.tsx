@@ -50,7 +50,7 @@ const Home: React.FC = () => {
     {
       title: "Services pour les BTP",
       description: "Solutions de mesure adaptées aux besoins des entreprises du bâtiment et des travaux publics.",
-      icon: <Building2 className="text-primary-600" size={24} />,
+      icon: <Building2 className="text-primary-600\" size={24} />,
       link: "/services/btp"
     },
     {
@@ -62,7 +62,7 @@ const Home: React.FC = () => {
     {
       title: "Services pour les Industries",
       description: "Équipements de mesure pour optimiser les processus industriels et assurer la qualité.",
-      icon: <Factory className="text-primary-600" size={24} />,
+      icon: <Factory className="text-primary-600\" size={24} />,
       link: "/services/industries"
     },
     {
@@ -74,7 +74,7 @@ const Home: React.FC = () => {
     {
       title: "Services pour les Laboratoires d'Analyse de l'Eau",
       description: "Équipements spécialisés pour des analyses d'eau précises et fiables.",
-      icon: <Droplet className="text-primary-600" size={24} />,
+      icon: <Droplet className="text-primary-600\" size={24} />,
       link: "/services/analyse-eau"
     },
     {
