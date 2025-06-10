@@ -120,7 +120,7 @@ const MesFormulaires: React.FC = () => {
       {/* Liste des formulaires */}
       {filteredDrafts.length === 0 ? (
         <AnimatedCard className="text-center py-12">
-          <FileText className="mx-auto text-gray-600 mb-4" size={48} />
+          <FileText className="mx-auto text-gray-600 mb-4\" size={48} />
           <h3 className="text-xl font-semibold text-gray-400 mb-2">
             {searchQuery ? 'Aucun formulaire trouvé' : 'Aucun formulaire en cours'}
           </h3>
