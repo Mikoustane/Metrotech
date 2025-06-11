@@ -118,6 +118,7 @@ const AppContent: React.FC = () => {
           
           {/* Application interne */}
           <Route path="/login" element={<InternalAppWrapper />} />
+          <Route path="/formulaire/:id" element={<FormBuilder />} />
           
           {/* 404 */}
           <Route path="*" element={
