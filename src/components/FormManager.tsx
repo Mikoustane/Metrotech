@@ -149,6 +149,9 @@ const FormManager: React.FC = () => {
 
     try {
       setDrafts(prev => [...prev, newForm]);
+
+// Redirection vers le formulaire avec l'ID du brouillon
+navigate(`/formulaire/${newForm.id}`);
       
       // Logger la création du formulaire
       const formLog = {
