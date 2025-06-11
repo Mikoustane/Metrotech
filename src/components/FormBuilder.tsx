@@ -32,20 +32,18 @@ interface FormField {
   value: any;
 }
 
-const FormBuilder: React.FC = () => {
-  const { user } = useAuth();
-  const [drafts, setDrafts] = useLocalStorage<FormData[]>('metrotech_drafts', []);
-  const [completedForms, setCompletedForms] = useLocalStorage<FormData[]>('metrotech_completed', []);
-  const [selectedService, setSelectedService] = useState<string>('');
-  const [formFields, setFormFields] = useState<FormField[]>([]);
-  const [formTitle, setFormTitle] = useState('');
-  const [clientInfo, setClientInfo] = useState({
-    name: '',
-    address: '',
-    phone: '',
-    email: '',
-    contact: ''
-  });
+const { id } = useParams();
+useEffect(() => {
+  const drafts = JSON.parse(localStorage.getItem("metrotech_drafts") || "[]");
+  const currentForm = drafts.find((f: FormData) => f.id === id);
+  if (currentForm) {
+    setFormTitle(currentForm.title);
+    setSelectedService(currentForm.data.serviceType);
+    setFormFields(...) // générer à partir du service + champs vides ou partiellement remplis
+    setClientInfo(currentForm.data.client);
+  }
+}, [id]);
+
 
   const services = [
     {
