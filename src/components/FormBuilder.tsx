@@ -48,6 +48,27 @@ const FormBuilder: React.FC = () => {
     email: '',
     contact: ''
   });
+  const { id } = useParams();
+
+useEffect(() => {
+  const drafts = JSON.parse(localStorage.getItem("metrotech_drafts") || "[]");
+  const currentForm = drafts.find((f: FormData) => f.id === id);
+
+  if (currentForm) {
+    setFormTitle(currentForm.title);
+    setSelectedService(currentForm.data.serviceType);
+    setClientInfo(currentForm.data.client || { name: '', address: '', phone: '', email: '', contact: '' });
+
+    const service = services.find(s => s.id === currentForm.data.serviceType);
+    if (service) {
+      const mergedFields = service.fields.map(field => {
+        const savedValue = currentForm.data.fields?.find(f => f.id === field.id)?.value || '';
+        return { ...field, value: savedValue };
+      });
+      setFormFields(mergedFields);
+    }
+  }
+}, [id]);
 
   const services = [
     {
