@@ -23,6 +23,7 @@ import { useAuth } from '../context/AuthContext';
 
 const FormManager: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [drafts, setDrafts] = useLocalStorage<FormData[]>('metrotech_drafts', []);
