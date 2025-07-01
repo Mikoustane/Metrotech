@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
 import Dashboard from './Dashboard';
 import AdminDashboard from './AdminDashboard';
-import FormManager from './FormManager';
+import FormCreator from './FormCreator';
 import Historique from './Historique';
 import Sauvegarde from './Sauvegarde';
 import ConnectionTracker from './ConnectionTracker';
@@ -23,7 +23,7 @@ const InternalApp: React.FC = () => {
         // Si l'utilisateur est admin (ID = 1), afficher le dashboard admin
         return isAdmin ? <AdminDashboard /> : <Dashboard />;
       case 'formulaires':
-        return <FormManager />;
+        return <FormCreator />;
       case 'historique':
         return <Historique />;
       case 'sauvegarde':

@@ -12,7 +12,7 @@ import {
   Bell,
   Menu,
   X,
-  FormInput,
+  Plus,
   Globe,
   Shield
 } from 'lucide-react';
@@ -33,7 +33,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
 
   const menuItems = [
     { id: 'accueil', label: 'Accueil', icon: Home, badge: null, shortLabel: 'Home' },
-    { id: 'formulaires', label: 'Formulaires', icon: FormInput, badge: 'Nouveau', shortLabel: 'Forms' },
+    { id: 'formulaires', label: 'Créer Formulaire', icon: Plus, badge: 'Nouveau', shortLabel: 'Forms' },
     { id: 'historique', label: 'Historique', icon: History, badge: null, shortLabel: 'History' },
     { id: 'sauvegarde', label: 'Sauvegarde', icon: Save, badge: '3', shortLabel: 'Save' },
     ...(isAdmin ? [
