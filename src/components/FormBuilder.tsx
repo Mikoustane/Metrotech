@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   FileText, 
@@ -18,7 +17,8 @@ import {
   User,
   MapPin,
   Phone,
-  Mail
+  Mail,
+  ArrowLeft
 } from 'lucide-react';
 import AnimatedCard from './ui/AnimatedCard';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +36,8 @@ interface FormField {
 
 const FormBuilder: React.FC = () => {
   const { user } = useAuth();
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [drafts, setDrafts] = useLocalStorage<FormData[]>('metrotech_drafts', []);
   const [completedForms, setCompletedForms] = useLocalStorage<FormData[]>('metrotech_completed', []);
   const [selectedService, setSelectedService] = useState<string>('');
@@ -48,27 +50,30 @@ const FormBuilder: React.FC = () => {
     email: '',
     contact: ''
   });
-  const { id } = useParams();
 
-useEffect(() => {
-  const drafts = JSON.parse(localStorage.getItem("metrotech_drafts") || "[]");
-  const currentForm = drafts.find((f: FormData) => f.id === id);
+  useEffect(() => {
+    if (id) {
+      const currentForm = drafts.find((f: FormData) => f.id === id);
+      
+      if (currentForm) {
+        setFormTitle(currentForm.title);
+        setSelectedService(currentForm.data.serviceType);
+        setClientInfo(currentForm.data.client || { name: '', address: '', phone: '', email: '', contact: '' });
 
-  if (currentForm) {
-    setFormTitle(currentForm.title);
-    setSelectedService(currentForm.data.serviceType);
-    setClientInfo(currentForm.data.client || { name: '', address: '', phone: '', email: '', contact: '' });
-
-    const service = services.find(s => s.id === currentForm.data.serviceType);
-    if (service) {
-      const mergedFields = service.fields.map(field => {
-        const savedValue = currentForm.data.fields?.find(f => f.id === field.id)?.value || '';
-        return { ...field, value: savedValue };
-      });
-      setFormFields(mergedFields);
+        const service = services.find(s => s.id === currentForm.data.serviceType);
+        if (service) {
+          const mergedFields = service.fields.map(field => {
+            const savedValue = currentForm.data.fields?.find((f: any) => f.id === field.id)?.value || '';
+            return { ...field, value: savedValue };
+          });
+          setFormFields(mergedFields);
+        }
+      } else {
+        // Si le formulaire n'existe pas, rediriger vers la liste
+        navigate('/login');
+      }
     }
-  }
-}, [id]);
+  }, [id, drafts, navigate]);
 
   const services = [
     {
@@ -188,15 +193,6 @@ useEffect(() => {
     }
   ];
 
-  const handleServiceSelect = (serviceId: string) => {
-    const service = services.find(s => s.id === serviceId);
-    if (service) {
-      setSelectedService(serviceId);
-      setFormTitle(`Formulaire ${service.title}`);
-      setFormFields(service.fields.map(field => ({ ...field, value: '' })));
-    }
-  };
-
   const updateFieldValue = (fieldId: string, value: any) => {
     setFormFields(fields => 
       fields.map(field => 
@@ -206,10 +202,10 @@ useEffect(() => {
   };
 
   const saveDraft = () => {
-    if (!user || !selectedService) return;
+    if (!user || !selectedService || !id) return;
 
-    const formData: FormData = {
-      id: `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    const updatedForm: FormData = {
+      id: id,
       title: formTitle,
       service: services.find(s => s.id === selectedService)?.title || selectedService,
       status: 'draft',
@@ -224,12 +220,12 @@ useEffect(() => {
       }
     };
 
-    setDrafts(prev => [...prev, formData]);
+    setDrafts(prev => prev.map(form => form.id === id ? updatedForm : form));
     alert('Brouillon sauvegardé avec succès !');
   };
 
   const completeForm = () => {
-    if (!user || !selectedService) return;
+    if (!user || !selectedService || !id) return;
 
     // Vérifier que tous les champs requis sont remplis
     const requiredFields = formFields.filter(field => field.required);
@@ -241,7 +237,7 @@ useEffect(() => {
     }
 
     const formData: FormData = {
-      id: `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: id,
       title: formTitle,
       service: services.find(s => s.id === selectedService)?.title || selectedService,
       status: 'completed',
@@ -257,8 +253,9 @@ useEffect(() => {
     };
 
     setCompletedForms(prev => [...prev, formData]);
+    setDrafts(prev => prev.filter(form => form.id !== id));
     alert('Formulaire terminé et sauvegardé !');
-    resetForm();
+    navigate('/login');
   };
 
   const calculateProgress = () => {
@@ -266,19 +263,6 @@ useEffect(() => {
     const filledFields = formFields.filter(field => field.value).length + 
                         Object.values(clientInfo).filter(value => value).length;
     return Math.round((filledFields / totalFields) * 100);
-  };
-
-  const resetForm = () => {
-    setSelectedService('');
-    setFormFields([]);
-    setFormTitle('');
-    setClientInfo({
-      name: '',
-      address: '',
-      phone: '',
-      email: '',
-      contact: ''
-    });
   };
 
   const generatePDF = () => {
@@ -464,10 +448,6 @@ useEffect(() => {
     }
   };
 
-  const printForm = () => {
-    generatePDF();
-  };
-
   const renderField = (field: FormField) => {
     const commonProps = {
       id: field.id,
@@ -508,182 +488,176 @@ useEffect(() => {
     }
   };
 
+  if (!selectedService || !formFields.length) {
+    return (
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold text-white">Chargement du formulaire...</h1>
+          <button
+            onClick={() => navigate('/login')}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+          >
+            <ArrowLeft size={18} />
+            Retour
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Créateur de Formulaires</h1>
-        {selectedService && (
-          <div className="flex gap-2">
-            <button
-              onClick={saveDraft}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            >
-              <Save size={18} />
-              Sauvegarder
-            </button>
-            <button
-              onClick={generatePDF}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-            >
-              <Download size={18} />
-              Télécharger PDF
-            </button>
-            <button
-              onClick={printForm}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-            >
-              <Printer size={18} />
-              Imprimer
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/login')}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+          >
+            <ArrowLeft size={18} />
+            Retour
+          </button>
+          <h1 className="text-3xl font-bold text-white">Créateur de Formulaires</h1>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={saveDraft}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <Save size={18} />
+            Sauvegarder
+          </button>
+          <button
+            onClick={generatePDF}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+          >
+            <Download size={18} />
+            Télécharger PDF
+          </button>
+          <button
+            onClick={generatePDF}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+          >
+            <Printer size={18} />
+            Imprimer
+          </button>
+        </div>
       </div>
 
-      {/* Sélection du service */}
-      {!selectedService && (
+      {/* Formulaire */}
+      <div className="space-y-6">
+        {/* Informations client */}
         <AnimatedCard className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-          <h2 className="text-xl font-semibold text-white mb-6">Choisir un type de service</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {services.map((service) => {
-              const Icon = service.icon;
-              return (
-                <button
-                  key={service.id}
-                  onClick={() => handleServiceSelect(service.id)}
-                  className="flex items-center gap-3 p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors text-left"
-                >
-                  <Icon size={24} className="text-primary-400" />
-                  <span className="text-white font-medium">{service.title}</span>
-                </button>
-              );
-            })}
+          <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+            <User size={20} className="text-primary-400" />
+            Informations Client
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Nom du client *
+              </label>
+              <input
+                type="text"
+                value={clientInfo.name}
+                onChange={(e) => setClientInfo({...clientInfo, name: e.target.value})}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Personne de contact
+              </label>
+              <input
+                type="text"
+                value={clientInfo.contact}
+                onChange={(e) => setClientInfo({...clientInfo, contact: e.target.value})}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <MapPin size={16} className="inline mr-1" />
+                Adresse
+              </label>
+              <input
+                type="text"
+                value={clientInfo.address}
+                onChange={(e) => setClientInfo({...clientInfo, address: e.target.value})}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Phone size={16} className="inline mr-1" />
+                Téléphone
+              </label>
+              <input
+                type="tel"
+                value={clientInfo.phone}
+                onChange={(e) => setClientInfo({...clientInfo, phone: e.target.value})}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Mail size={16} className="inline mr-1" />
+                Email
+              </label>
+              <input
+                type="email"
+                value={clientInfo.email}
+                onChange={(e) => setClientInfo({...clientInfo, email: e.target.value})}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
           </div>
         </AnimatedCard>
-      )}
 
-      {/* Formulaire */}
-      {selectedService && (
-        <div className="space-y-6">
-          {/* Informations client */}
-          <AnimatedCard className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-2">
-              <User size={20} className="text-primary-400" />
-              Informations Client
+        {/* Champs du formulaire */}
+        <AnimatedCard className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+              <FileText size={20} className="text-primary-400" />
+              {formTitle}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Nom du client *
-                </label>
-                <input
-                  type="text"
-                  value={clientInfo.name}
-                  onChange={(e) => setClientInfo({...clientInfo, name: e.target.value})}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Personne de contact
-                </label>
-                <input
-                  type="text"
-                  value={clientInfo.contact}
-                  onChange={(e) => setClientInfo({...clientInfo, contact: e.target.value})}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  <MapPin size={16} className="inline mr-1" />
-                  Adresse
-                </label>
-                <input
-                  type="text"
-                  value={clientInfo.address}
-                  onChange={(e) => setClientInfo({...clientInfo, address: e.target.value})}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  <Phone size={16} className="inline mr-1" />
-                  Téléphone
-                </label>
-                <input
-                  type="tel"
-                  value={clientInfo.phone}
-                  onChange={(e) => setClientInfo({...clientInfo, phone: e.target.value})}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  <Mail size={16} className="inline mr-1" />
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={clientInfo.email}
-                  onChange={(e) => setClientInfo({...clientInfo, email: e.target.value})}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
+            <div className="flex items-center gap-2 text-sm text-gray-400">
+              <Clock size={16} />
+              Progression: {calculateProgress()}%
             </div>
-          </AnimatedCard>
+          </div>
+          
+          <div className="space-y-4">
+            {formFields.map((field) => (
+              <div key={field.id}>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  {field.label}
+                  {field.required && <span className="text-red-400 ml-1">*</span>}
+                </label>
+                {renderField(field)}
+              </div>
+            ))}
+          </div>
 
-          {/* Champs du formulaire */}
-          <AnimatedCard className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-white flex items-center gap-2">
-                <FileText size={20} className="text-primary-400" />
-                {formTitle}
-              </h2>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Clock size={16} />
-                Progression: {calculateProgress()}%
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              {formFields.map((field) => (
-                <div key={field.id}>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {field.label}
-                    {field.required && <span className="text-red-400 ml-1">*</span>}
-                  </label>
-                  {renderField(field)}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3 mt-8">
-              <button
-                onClick={completeForm}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
-              >
-                <FileText size={18} />
-                Terminer le formulaire
-              </button>
-              <button
-                onClick={saveDraft}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              >
-                <Save size={18} />
-                Sauvegarder en brouillon
-              </button>
-              <button
-                onClick={resetForm}
-                className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-              >
-                Nouveau formulaire
-              </button>
-            </div>
-          </AnimatedCard>
-        </div>
-      )}
+          <div className="flex gap-3 mt-8">
+            <button
+              onClick={completeForm}
+              className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors font-medium"
+            >
+              <FileText size={18} />
+              Terminer le formulaire
+            </button>
+            <button
+              onClick={saveDraft}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <Save size={18} />
+              Sauvegarder en brouillon
+            </button>
+          </div>
+        </AnimatedCard>
+      </div>
     </div>
   );
 };

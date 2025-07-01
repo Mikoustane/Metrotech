@@ -137,22 +137,25 @@ const FormManager: React.FC = () => {
       updatedAt: new Date(),
       createdBy: user.id,
       data: {
-        client: '',
-        instrument: '',
-        progress: 0,
+        client: {
+          name: '',
+          address: '',
+          phone: '',
+          email: '',
+          contact: ''
+        },
+        fields: [],
         serviceType: serviceId,
         formType: formType,
         createdByName: user.name,
-        createdByEmail: user.email
+        createdByEmail: user.email,
+        progress: 0
       }
     };
 
     try {
       setDrafts(prev => [...prev, newForm]);
 
-// Redirection vers le formulaire avec l'ID du brouillon
-navigate(`/formulaire/${newForm.id}`);
-      
       // Logger la création du formulaire
       const formLog = {
         action: 'create',
@@ -173,7 +176,9 @@ navigate(`/formulaire/${newForm.id}`);
       
       localStorage.setItem('metrotech_form_logs', JSON.stringify(logs));
       
-      alert(`Formulaire "${formType}" créé avec succès!\nID: ${newForm.id}`);
+      // Redirection vers le FormBuilder avec l'ID du formulaire
+      window.location.href = `/formulaire/${newForm.id}`;
+      
     } catch (error) {
       console.error('Erreur lors de la création du formulaire:', error);
       alert('Erreur lors de la création du formulaire. Veuillez réessayer.');
@@ -187,15 +192,17 @@ navigate(`/formulaire/${newForm.id}`);
   );
 
   return (
-    <div className="p-6 space-y-6 no-scrollbar">
+    <div className="p-4 lg:p-6 space-y-6 overflow-x-hidden safe-area-inset no-scrollbar">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold text-white mb-2">Gestionnaire de Formulaires</h1>
-        <p className="text-gray-400">
+        <h1 className="text-2xl lg:text-3xl font-bold text-light mb-2">
+          Gestionnaire de Formulaires
+        </h1>
+        <p className="text-gray-400 text-base">
           Créez et gérez vos formulaires par service - {drafts.length} brouillon(s), {completedForms.length} terminé(s)
         </p>
       </motion.div>
