@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import FormBuilder from './components/FormBuilder';
 
 // Layouts
 import Layout from './layouts/Layout';
@@ -119,7 +118,6 @@ const AppContent: React.FC = () => {
           
           {/* Application interne */}
           <Route path="/login" element={<InternalAppWrapper />} />
-          <Route path="/formulaire/:id" element={<FormBuilder />} />
           
           {/* 404 */}
           <Route path="*" element={

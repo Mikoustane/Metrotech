@@ -14,7 +14,8 @@ import {
   X,
   Plus,
   Globe,
-  Shield
+  Shield,
+  Database
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -38,6 +39,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
     { id: 'sauvegarde', label: 'Sauvegarde', icon: Save, badge: '3', shortLabel: 'Save' },
     ...(isAdmin ? [
       { id: 'connexions', label: 'Connexions IP', icon: Globe, badge: null, shortLabel: 'IP' },
+      { id: 'donnees', label: 'Gestionnaire Données', icon: Database, badge: null, shortLabel: 'Data' },
       { id: 'parametres', label: 'Paramètres', icon: Settings, badge: null, shortLabel: 'Settings' }
     ] : [])
   ];

@@ -9,6 +9,7 @@ import Historique from './Historique';
 import Sauvegarde from './Sauvegarde';
 import ConnectionTracker from './ConnectionTracker';
 import SettingsManager from './SettingsManager';
+import DataManager from './DataManager';
 
 const InternalApp: React.FC = () => {
   const [activeSection, setActiveSection] = useState('accueil');
@@ -31,6 +32,9 @@ const InternalApp: React.FC = () => {
       case 'connexions':
         // Seulement accessible aux admins
         return isAdmin ? <ConnectionTracker /> : <Dashboard />;
+      case 'donnees':
+        // Seulement accessible aux admins
+        return isAdmin ? <DataManager /> : <Dashboard />;
       case 'parametres':
         return <SettingsManager />;
       default:
