@@ -1,6 +1,7 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Building2, FlaskRound as Flask, Factory, Guitar as Hospital, Droplet, Thermometer } from 'lucide-react';
 import Button from '../components/ui/Button';
 
@@ -186,147 +187,156 @@ const ServiceDetail: React.FC = () => {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="bg-gray-900 min-h-screen pt-24"
-    >
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Bouton retour fixé en haut */}
-        <div className="fixed top-24 left-4 z-50">
-          <Link to="/services">
-            <Button
-              variant="ghost"
-              className="bg-gray-800/90 hover:bg-gray-700 text-white backdrop-blur-sm shadow-lg"
-              icon={<ArrowLeft size={18} />}
-            >
-              Retour aux services
-            </Button>
-          </Link>
-        </div>
+    <>
+      <Helmet>
+        <title>{service.title} - METROTECH INSTRUMENT SARL | Métrologie Côte d'Ivoire</title>
+        <meta name="description" content={`${service.description} Services METROTECH en Côte d'Ivoire : étalonnage, vérification, maintenance. Devis gratuit à Abidjan.`} />
+        <meta name="keywords" content={`${service.title}, métrologie, étalonnage, METROTECH, Côte d'Ivoire, Abidjan`} />
+        <link rel="canonical" href={`https://metrotech-ci.com/services/${serviceId}`} />
+      </Helmet>
+      
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-gray-900 min-h-screen pt-24"
+      >
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Bouton retour fixé en haut */}
+          <div className="fixed top-24 left-4 z-50">
+            <Link to="/services">
+              <Button
+                variant="ghost"
+                className="bg-gray-800/90 hover:bg-gray-700 text-white backdrop-blur-sm shadow-lg"
+                icon={<ArrowLeft size={18} />}
+              >
+                Retour aux services
+              </Button>
+            </Link>
+          </div>
 
-        {/* Hero Section */}
-        <div className="relative rounded-2xl overflow-hidden mb-16">
-          <img
-            src={service.image}
-            alt={service.title}
-            className="w-full h-[500px] object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent">
-            <div className="absolute bottom-0 left-0 right-0 p-8">
-              <div className="flex items-center mb-4">
-                {service.icon}
-                <h1 className="text-4xl font-bold text-white ml-4">{service.title}</h1>
+          {/* Hero Section */}
+          <div className="relative rounded-2xl overflow-hidden mb-16">
+            <img
+              src={service.image}
+              alt={service.title}
+              className="w-full h-[500px] object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent">
+              <div className="absolute bottom-0 left-0 right-0 p-8">
+                <div className="flex items-center mb-4">
+                  {service.icon}
+                  <h1 className="text-4xl font-bold text-white ml-4">{service.title}</h1>
+                </div>
+                <p className="text-xl text-gray-300">{service.description}</p>
               </div>
-              <p className="text-xl text-gray-300">{service.description}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            {/* Main Content */}
+            <div className="lg:col-span-2">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="prose prose-lg prose-invert"
+              >
+                <h2 className="text-2xl font-semibold text-white mb-6">Description détaillée</h2>
+                <p className="text-gray-300">{service.longDescription}</p>
+
+                <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Applications</h2>
+                <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {service.applications.map((application, index) => (
+                    <motion.li
+                      key={index}
+                      className="flex items-center bg-gray-800 rounded-lg p-4"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + index * 0.1 }}
+                    >
+                      <div className="w-2 h-2 bg-primary-500 rounded-full mr-3" />
+                      <span className="text-gray-300">{application}</span>
+                    </motion.li>
+                  ))}
+                </ul>
+              </motion.div>
+
+              {/* Gallery */}
+              <motion.div
+                className="mt-16"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <h2 className="text-2xl font-semibold text-white mb-8">Galerie</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {service.gallery.map((image, index) => (
+                    <motion.div
+                      key={index}
+                      className="relative group rounded-lg overflow-hidden"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 + index * 0.1 }}
+                    >
+                      <img
+                        src={image}
+                        alt={`${service.title} - Image ${index + 1}`}
+                        className="w-full h-64 object-cover transform group-hover:scale-110 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Sidebar */}
+            <div className="lg:col-span-1">
+              <motion.div
+                className="bg-gray-800 rounded-xl p-6 sticky top-24"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <h2 className="text-xl font-semibold text-white mb-6">Caractéristiques</h2>
+                <ul className="space-y-4">
+                  {service.features.map((feature, index) => (
+                    <motion.li
+                      key={index}
+                      className="flex items-start"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 + index * 0.1 }}
+                    >
+                      <div className="w-2 h-2 bg-primary-500 rounded-full mr-3 mt-2" />
+                      <span className="text-gray-300">{feature}</span>
+                    </motion.li>
+                  ))}
+                </ul>
+
+                <motion.div
+                  className="mt-8"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <Link to="/contact">
+                    <Button
+                      variant="primary"
+                      className="w-full"
+                    >
+                      Demander un devis
+                    </Button>
+                  </Link>
+                </motion.div>
+              </motion.div>
             </div>
           </div>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="prose prose-lg prose-invert"
-            >
-              <h2 className="text-2xl font-semibold text-white mb-6">Description détaillée</h2>
-              <p className="text-gray-300">{service.longDescription}</p>
-
-              <h2 className="text-2xl font-semibold text-white mt-12 mb-6">Applications</h2>
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {service.applications.map((application, index) => (
-                  <motion.li
-                    key={index}
-                    className="flex items-center bg-gray-800 rounded-lg p-4"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1 }}
-                  >
-                    <div className="w-2 h-2 bg-primary-500 rounded-full mr-3" />
-                    <span className="text-gray-300">{application}</span>
-                  </motion.li>
-                ))}
-              </ul>
-            </motion.div>
-
-            {/* Gallery */}
-            <motion.div
-              className="mt-16"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <h2 className="text-2xl font-semibold text-white mb-8">Galerie</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {service.gallery.map((image, index) => (
-                  <motion.div
-                    key={index}
-                    className="relative group rounded-lg overflow-hidden"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 + index * 0.1 }}
-                  >
-                    <img
-                      src={image}
-                      alt={`${service.title} - Image ${index + 1}`}
-                      className="w-full h-64 object-cover transform group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <motion.div
-              className="bg-gray-800 rounded-xl p-6 sticky top-24"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <h2 className="text-xl font-semibold text-white mb-6">Caractéristiques</h2>
-              <ul className="space-y-4">
-                {service.features.map((feature, index) => (
-                  <motion.li
-                    key={index}
-                    className="flex items-start"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1 }}
-                  >
-                    <div className="w-2 h-2 bg-primary-500 rounded-full mr-3 mt-2" />
-                    <span className="text-gray-300">{feature}</span>
-                  </motion.li>
-                ))}
-              </ul>
-
-              <motion.div
-                className="mt-8"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-              >
-                <Link to="/contact">
-                  <Button
-                    variant="primary"
-                    className="w-full"
-                  >
-                    Demander un devis
-                  </Button>
-                </Link>
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </>
   );
 };
 

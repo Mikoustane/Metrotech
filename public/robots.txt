@@ -1,0 +1,18 @@
+# Robots.txt pour METROTECH INSTRUMENT SARL
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://metrotech-ci.com/sitemap.xml
+
+# Disallow admin pages
+Disallow: /login
+Disallow: /admin
+
+# Allow important pages
+Allow: /services
+Allow: /about
+Allow: /contact
+
+# Crawl delay (optionnel)
+Crawl-delay: 1

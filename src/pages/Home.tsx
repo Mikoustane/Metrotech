@@ -9,9 +9,7 @@ import {
   Factory,
   Guitar as Hospital,
   Droplet,
-  Thermometer,
-  Plus,
-  FileText
+  Thermometer
 } from 'lucide-react';
 
 import Button from '../components/ui/Button';
@@ -212,136 +210,77 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Section Formulaires et Actualités côte à côte */}
+      {/* Section Actualités */}
       <section className="py-20 bg-gray-950 text-white container-stable">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            
-            {/* Section Création de Formulaires */}
-            <div>
-              <SectionHeading 
-                title="Créer un Formulaire"
-                subtitle="Accès rapide à la création de formulaires de service"
-                light
-              />
-              
-              <AnimatedCard 
-                delay={0.2}
-                className="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700 hover:border-primary-500/50 transition-all duration-300"
-                hover
-              >
-                <div className="flex items-center gap-3 mb-6">
-                  <Plus className="text-primary-400" size={24} />
-                  <h3 className="text-xl font-bold text-white">Nouveau Formulaire</h3>
-                </div>
-                
-                <p className="text-gray-300 mb-6">
-                  Créez rapidement un formulaire de service pour vos interventions de métrologie.
-                </p>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Building2 size={16} className="text-orange-400" />
-                    <span>Services BTP</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Flask size={16} className="text-blue-400" />
-                    <span>Laboratoires</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Factory size={16} className="text-green-400" />
-                    <span>Industries</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <Hospital size={16} className="text-red-400" />
-                    <span>Hôpitaux</span>
-                  </div>
-                </div>
-                
-                <Link to="/login">
-                  <Button
-                    variant="primary"
-                    className="w-full"
-                    icon={<FileText size={18} />}
-                    iconPosition="right"
-                  >
-                    Accéder aux Formulaires
-                  </Button>
-                </Link>
-              </AnimatedCard>
-            </div>
-
-            {/* Section Actualités */}
-            <div>
-              <SectionHeading 
-                title="Actualités & Événements"
-                subtitle="Suivez nos dernières participations et actions terrain"
-                light
-              />
-              
-              {publishedNews.length > 0 ? (
-                <div className="space-y-6">
-                  {publishedNews.map((newsItem, index) => (
-                    <AnimatedCard 
-                      key={newsItem.id}
-                      delay={0.3 + index * 0.1}
-                      className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl border border-gray-700 hover:border-primary-500/50 transition-all duration-300"
-                      hover
-                    >
-                      {newsItem.image && (
-                        <div className="relative h-32 overflow-hidden">
-                          <OptimizedImage 
-                            src={newsItem.image}
-                            alt={newsItem.legend || newsItem.title}
-                            className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300"
-                          />
-                        </div>
-                      )}
-                      <div className="p-4">
-                        <h4 className="text-lg font-bold text-white mb-2 line-clamp-2">{newsItem.title}</h4>
-                        {newsItem.subtitle && (
-                          <p className="text-primary-400 text-sm mb-2">{newsItem.subtitle}</p>
-                        )}
-                        <p className="text-gray-300 text-sm mb-3 line-clamp-2">{newsItem.content}</p>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>{new Date(newsItem.createdAt).toLocaleDateString('fr-FR')}</span>
-                          <span className="px-2 py-1 bg-primary-500/10 text-primary-400 rounded-full">
-                            METROTECH
-                          </span>
-                        </div>
-                      </div>
-                    </AnimatedCard>
-                  ))}
-                </div>
-              ) : (
+          <SectionHeading 
+            title="Actualités & Événements"
+            subtitle="Suivez nos dernières participations et actions terrain"
+            centered
+            light
+          />
+          
+          {publishedNews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {publishedNews.map((newsItem, index) => (
                 <AnimatedCard 
-                  delay={0.3}
-                  className="bg-gray-800 rounded-2xl p-6 shadow-xl border border-gray-700"
+                  key={newsItem.id}
+                  delay={0.3 + index * 0.1}
+                  className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl border border-gray-700 hover:border-primary-500/50 transition-all duration-300"
+                  hover
                 >
-                  <p className="text-base text-gray-300 mb-4 text-stable">
-                    METROTECH INSTRUMENT SARL ÉTAIT PRÉSENT À LA MASTERCLASS ORGANISÉE PAR L'ASSOCIATION DES MÉTROLOGUES DU CREFSEM COMME PARTENAIRE ET AUSSI COMME PANELISTE. MERCI À TOUS POUR VOTRE IMPLICATION. 
-                    <span className="block mt-2 font-semibold text-white">(Présenté le 24 mai 2025)</span>
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <AnimatedCard delay={0.4} hover>
+                  {newsItem.image && (
+                    <div className="relative h-48 overflow-hidden">
                       <OptimizedImage 
-                        src="https://scontent.fabj7-1.fna.fbcdn.net/v/t39.30808-6/500207401_1056683716558058_8225420519230056849_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=109&ccb=1-7&_nc_sid=833d8c&_nc_ohc=AQCHl-BIRVAQ7kNvwHH7dwC&_nc_oc=AdkNVdFVDg8CabVp2vk-HZA0HmpRYs-huBke6LxKNP6vgYC9ES7DrZzMQt8CssS3FDU&_nc_zt=23&_nc_ht=scontent.fabj7-1.fna&_nc_gid=0RjnumVTkZbkTau2xOZ5nA&oh=00_AfPtqMh73Ut5kAIMQSRn8CJMuvPHzocv-g9JvbO84mHupg&oe=68472816"
-                        alt="Événement Metrotech 1"
-                        className="w-full h-32 object-cover object-center rounded-lg shadow-md"
+                        src={newsItem.image}
+                        alt={newsItem.legend || newsItem.title}
+                        className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300"
                       />
-                    </AnimatedCard>
-                    <AnimatedCard delay={0.5} hover>
-                      <OptimizedImage 
-                        src="https://scontent.fabj7-1.fna.fbcdn.net/v/t39.30808-6/501058991_1056683673224729_4078049321040408501_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=105&ccb=1-7&_nc_sid=833d8c&_nc_ohc=TTv9M1HVCw0Q7kNvwEUfaj7&_nc_oc=Adm9jQtT5cPqbK7VWDX0AYHs_JpzhIO1ZrgZr5r0c8U3eeegntb26f4QZK4i2e8w1P8&_nc_zt=23&_nc_ht=scontent.fabj7-1.fna&_nc_gid=HZt_hNDRNvE8GVRog2QQrA&oh=00_AfMTDZ3n7-j_LdgUM3w_00bR5LpfR-FdFiiK3pJDDdE0Fg&oe=684743D4"
-                        alt="Événement Metrotech 2"
-                        className="w-full h-32 object-cover object-center rounded-lg shadow-md"
-                      />
-                    </AnimatedCard>
+                    </div>
+                  )}
+                  <div className="p-6">
+                    <h4 className="text-xl font-bold text-white mb-2 line-clamp-2">{newsItem.title}</h4>
+                    {newsItem.subtitle && (
+                      <p className="text-primary-400 text-sm mb-2">{newsItem.subtitle}</p>
+                    )}
+                    <p className="text-gray-300 text-sm mb-4 line-clamp-3">{newsItem.content}</p>
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{new Date(newsItem.createdAt).toLocaleDateString('fr-FR')}</span>
+                      <span className="px-2 py-1 bg-primary-500/10 text-primary-400 rounded-full">
+                        METROTECH
+                      </span>
+                    </div>
                   </div>
                 </AnimatedCard>
-              )}
+              ))}
             </div>
-          </div>
+          ) : (
+            <AnimatedCard 
+              delay={0.3}
+              className="bg-gray-800 rounded-2xl p-8 shadow-xl border border-gray-700 max-w-4xl mx-auto"
+            >
+              <p className="text-lg text-gray-300 mb-6 text-stable text-center">
+                METROTECH INSTRUMENT SARL ÉTAIT PRÉSENT À LA MASTERCLASS ORGANISÉE PAR L'ASSOCIATION DES MÉTROLOGUES DU CREFSEM COMME PARTENAIRE ET AUSSI COMME PANELISTE. MERCI À TOUS POUR VOTRE IMPLICATION. 
+                <span className="block mt-2 font-semibold text-white">(Présenté le 24 mai 2025)</span>
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <AnimatedCard delay={0.4} hover>
+                  <OptimizedImage 
+                    src="https://scontent.fabj7-1.fna.fbcdn.net/v/t39.30808-6/500207401_1056683716558058_8225420519230056849_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=109&ccb=1-7&_nc_sid=833d8c&_nc_ohc=AQCHl-BIRVAQ7kNvwHH7dwC&_nc_oc=AdkNVdFVDg8CabVp2vk-HZA0HmpRYs-huBke6LxKNP6vgYC9ES7DrZzMQt8CssS3FDU&_nc_zt=23&_nc_ht=scontent.fabj7-1.fna&_nc_gid=0RjnumVTkZbkTau2xOZ5nA&oh=00_AfPtqMh73Ut5kAIMQSRn8CJMuvPHzocv-g9JvbO84mHupg&oe=68472816"
+                    alt="Événement Metrotech 1"
+                    className="w-full h-48 object-cover object-center rounded-lg shadow-md"
+                  />
+                </AnimatedCard>
+                <AnimatedCard delay={0.5} hover>
+                  <OptimizedImage 
+                    src="https://scontent.fabj7-1.fna.fbcdn.net/v/t39.30808-6/501058991_1056683673224729_4078049321040408501_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=105&ccb=1-7&_nc_sid=833d8c&_nc_ohc=TTv9M1HVCw0Q7kNvwEUfaj7&_nc_oc=Adm9jQtT5cPqbK7VWDX0AYHs_JpzhIO1ZrgZr5r0c8U3eeegntb26f4QZK4i2e8w1P8&_nc_zt=23&_nc_ht=scontent.fabj7-1.fna&_nc_gid=HZt_hNDRNvE8GVRog2QQrA&oh=00_AfMTDZ3n7-j_LdgUM3w_00bR5LpfR-FdFiiK3pJDDdE0Fg&oe=684743D4"
+                    alt="Événement Metrotech 2"
+                    className="w-full h-48 object-cover object-center rounded-lg shadow-md"
+                  />
+                </AnimatedCard>
+              </div>
+            </AnimatedCard>
+          )}
         </div>
       </section>
 

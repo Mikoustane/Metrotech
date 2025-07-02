@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { 
   Building2, 
   FlaskRound as Flask, 
@@ -188,46 +189,55 @@ const Services: React.FC = () => {
   ];
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="bg-gray-900 pt-24"
-    >
-      {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-900 via-gray-900 to-secondary-900">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.h1 
-            className="text-4xl md:text-5xl font-bold text-white mb-6"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            Nos Services
-          </motion.h1>
-          <motion.p 
-            className="text-xl text-gray-300 max-w-3xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            Des solutions de métrologie complètes et professionnelles pour tous vos besoins de mesure et de contrôle.
-          </motion.p>
-        </div>
-      </section>
+    <>
+      <Helmet>
+        <title>Services de Métrologie - METROTECH INSTRUMENT SARL | Étalonnage Côte d'Ivoire</title>
+        <meta name="description" content="Découvrez nos services de métrologie en Côte d'Ivoire : étalonnage BTP, laboratoires, industries, hôpitaux, analyse eau et surveillance température. Expert METROTECH à Abidjan." />
+        <meta name="keywords" content="services métrologie, étalonnage BTP, laboratoire Abidjan, industrie Côte d'Ivoire, hôpital, analyse eau, température hygrométrie" />
+        <link rel="canonical" href="https://metrotech-ci.com/services" />
+      </Helmet>
+      
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.5 }}
+        className="bg-gray-900 pt-24"
+      >
+        {/* Hero Section */}
+        <section className="py-20 bg-gradient-to-br from-primary-900 via-gray-900 to-secondary-900">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <motion.h1 
+              className="text-4xl md:text-5xl font-bold text-white mb-6"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              Nos Services de Métrologie
+            </motion.h1>
+            <motion.p 
+              className="text-xl text-gray-300 max-w-3xl mx-auto"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              Des solutions de métrologie complètes et professionnelles pour tous vos besoins de mesure et de contrôle en Côte d'Ivoire.
+            </motion.p>
+          </div>
+        </section>
 
-      {/* Services List */}
-      <section>
-        {services.map((service, index) => (
-          <ServiceItem 
-            key={service.id}
-            {...service}
-            index={index}
-          />
-        ))}
-      </section>
-    </motion.div>
+        {/* Services List */}
+        <section>
+          {services.map((service, index) => (
+            <ServiceItem 
+              key={service.id}
+              {...service}
+              index={index}
+            />
+          ))}
+        </section>
+      </motion.div>
+    </>
   );
 };
 
