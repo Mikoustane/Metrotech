@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Home, 
-  FileText, 
   History, 
   Save, 
   LogOut, 
@@ -12,7 +11,6 @@ import {
   Bell,
   Menu,
   X,
-  Plus,
   Globe,
   Shield,
   Database
@@ -34,7 +32,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
 
   const menuItems = [
     { id: 'accueil', label: 'Accueil', icon: Home, badge: null, shortLabel: 'Home' },
-    { id: 'formulaires', label: 'Créer Formulaire', icon: Plus, badge: 'Nouveau', shortLabel: 'Forms' },
     { id: 'historique', label: 'Historique', icon: History, badge: null, shortLabel: 'History' },
     { id: 'sauvegarde', label: 'Sauvegarde', icon: Save, badge: '3', shortLabel: 'Save' },
     ...(isAdmin ? [
