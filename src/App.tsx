@@ -1,48 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { BrowserRouter } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
-// Layouts
-import Layout from './layouts/Layout';
-
-// Pages
-import Home from './pages/Home';
-import Services from './pages/Services';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import NotFound from './pages/NotFound';
-import ServiceDetail from './pages/ServiceDetail';
-
-// Internal App Components
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Login from './components/Login';
-import InternalApp from './components/InternalApp';
+// Components
+import AppRoutes from './components/AppRoutes';
+import LoadingSpinner from './components/ui/LoadingSpinner';
 
 // Context
+import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
-
-// UI Components
-import LoadingSpinner from './components/ui/LoadingSpinner';
 
 // Hooks
 import { useVisitTracker } from './hooks/useVisitTracker';
+import { useLanguageDetection } from './hooks/useLanguageDetection';
 
-// Internal App Wrapper
-const InternalAppWrapper: React.FC = () => {
-  const { isAuthenticated } = useAuth();
-  
-  return isAuthenticated ? <InternalApp /> : <Login />;
-};
+// Utils
+import { initializeElectronOptimizations, shouldLoadAnalytics } from './utils/electronUtils';
 
-// Main App Component with visit tracking
+// Main App Component with optimizations
 const AppContent: React.FC = () => {
-  const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
   
-  // Tracker les visites
+  // Hooks
   useVisitTracker();
+  useLanguageDetection();
 
   useEffect(() => {
+    // Initialiser les optimisations Electron
+    initializeElectronOptimizations();
+
+    // Initialiser Google Analytics seulement en environnement web
+    if (shouldLoadAnalytics() && typeof gtag !== 'undefined') {
+      gtag('config', 'GA_MEASUREMENT_ID');
+      gtag('event', 'page_view', {
+        page_title: document.title,
+        page_location: window.location.href
+      });
+    }
+
+    // Initialiser Facebook Pixel seulement en environnement web
+    if (shouldLoadAnalytics() && typeof fbq !== 'undefined') {
+      fbq('init', 'YOUR_PIXEL_ID');
+      fbq('track', 'PageView');
+    }
+
+    // Simuler le chargement initial
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1500);
@@ -76,7 +78,7 @@ const AppContent: React.FC = () => {
               className="h-12 mx-auto mb-4"
             />
             <div className="flex items-center gap-2 text-gray-400">
-              <LoadingSpinner size="sm" />
+              <LoadingSpinner size="sm" aria-label="Application en cours de chargement" />
               <span className="text-sm">Chargement...</span>
             </div>
           </motion.div>
@@ -87,57 +89,20 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="no-scrollbar">
-      <AnimatePresence mode="wait">
-        <Routes location={location} key={location.pathname}>
-          {/* Site principal */}
-          <Route path="/" element={
-            <Layout>
-              <Home />
-            </Layout>
-          } />
-          <Route path="/services" element={
-            <Layout>
-              <Services />
-            </Layout>
-          } />
-          <Route path="/services/:serviceId" element={
-            <Layout>
-              <ServiceDetail />
-            </Layout>
-          } />
-          <Route path="/about" element={
-            <Layout>
-              <About />
-            </Layout>
-          } />
-          <Route path="/contact" element={
-            <Layout>
-              <Contact />
-            </Layout>
-          } />
-          
-          {/* Application interne */}
-          <Route path="/login" element={<InternalAppWrapper />} />
-          
-          {/* 404 */}
-          <Route path="*" element={
-            <Layout>
-              <NotFound />
-            </Layout>
-          } />
-        </Routes>
-      </AnimatePresence>
+      <AppRoutes />
     </div>
   );
 };
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 }
 
