@@ -19,13 +19,16 @@ import {
   CheckCircle,
   FileText,
   Newspaper,
-  FormInput
+  Mail,
+  MessageSquare,
+  Phone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AnimatedCard from './ui/AnimatedCard';
 import ProgressBar from './ui/ProgressBar';
 import NewsManager from './NewsManager';
 import { USERS } from '../data/users';
+import { getEmailStats, getMessagesForAdmin, markMessageAsRead, deleteMessage } from '../services/manualEmail';
 
 interface VisitStats {
   today: number;
@@ -55,6 +58,8 @@ const AdminDashboard: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [newPassword, setNewPassword] = useState<string>('');
   const [passwordChangeStatus, setPasswordChangeStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [emailStats, setEmailStats] = useState<any>({});
 
   // Récupération des vraies données de visite
   useEffect(() => {
@@ -67,10 +72,27 @@ const AdminDashboard: React.FC = () => {
       }
     };
 
+    const loadMessages = () => {
+      const msgs = getMessagesForAdmin();
+      setMessages(msgs);
+    };
+
+    const loadEmailStats = () => {
+      const stats = getEmailStats();
+      setEmailStats(stats);
+    };
+
     loadVisitData();
+    loadMessages();
+    loadEmailStats();
     
     // Actualiser les données toutes les 30 secondes
-    const interval = setInterval(loadVisitData, 30000);
+    const interval = setInterval(() => {
+      loadVisitData();
+      loadMessages();
+      loadEmailStats();
+    }, 30000);
+    
     return () => clearInterval(interval);
   }, []);
 
@@ -132,6 +154,8 @@ const AdminDashboard: React.FC = () => {
       completed: localStorage.getItem('metrotech_completed'),
       news: localStorage.getItem('metrotech_news'),
       connections: localStorage.getItem('metrotech_connections'),
+      messages: localStorage.getItem('metrotech_messages'),
+      emailLogs: localStorage.getItem('metrotech_email_logs'),
       timestamp: new Date().toISOString()
     };
 
@@ -174,16 +198,168 @@ const AdminDashboard: React.FC = () => {
     return flags[country] || '🌍';
   };
 
+  const handleMarkAsRead = (messageId: string) => {
+    markMessageAsRead(messageId);
+    setMessages(getMessagesForAdmin());
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce message ?')) {
+      deleteMessage(messageId);
+      setMessages(getMessagesForAdmin());
+    }
+  };
+
   // Filtrer les utilisateurs (exclure l'admin actuel)
   const otherUsers = USERS.filter(u => u.id !== user?.id);
 
   const tabs = [
     { id: 'dashboard', label: 'Tableau de bord', icon: BarChart3 },
+    { id: 'messages', label: 'Messages', icon: MessageSquare },
     { id: 'news', label: 'Actualités', icon: Newspaper }
   ];
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'messages':
+        return (
+          <div className="space-y-6">
+            {/* Statistiques des messages */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <AnimatedCard delay={0.1} className="card-mobile hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 rounded-lg bg-blue-500/10">
+                    <MessageSquare size={24} className="text-blue-400" />
+                  </div>
+                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-500/10 text-blue-400">
+                    Total
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-light mb-1">{messages.length}</h3>
+                <p className="text-gray-400 text-sm">Messages reçus</p>
+              </AnimatedCard>
+
+              <AnimatedCard delay={0.2} className="card-mobile hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 rounded-lg bg-green-500/10">
+                    <Mail size={24} className="text-green-400" />
+                  </div>
+                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-orange-500/10 text-orange-400">
+                    Nouveaux
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-light mb-1">
+                  {messages.filter(m => m.status === 'nouveau').length}
+                </h3>
+                <p className="text-gray-400 text-sm">Non lus</p>
+              </AnimatedCard>
+
+              <AnimatedCard delay={0.3} className="card-mobile hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 rounded-lg bg-purple-500/10">
+                    <Calendar size={24} className="text-purple-400" />
+                  </div>
+                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-green-500/10 text-green-400">
+                    Aujourd'hui
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-light mb-1">
+                  {messages.filter(m => 
+                    new Date(m.timestamp).toDateString() === new Date().toDateString()
+                  ).length}
+                </h3>
+                <p className="text-gray-400 text-sm">Messages du jour</p>
+              </AnimatedCard>
+
+              <AnimatedCard delay={0.4} className="card-mobile hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 rounded-lg bg-orange-500/10">
+                    <Phone size={24} className="text-orange-400" />
+                  </div>
+                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-purple-500/10 text-purple-400">
+                    Emails
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-light mb-1">{emailStats.total || 0}</h3>
+                <p className="text-gray-400 text-sm">Emails préparés</p>
+              </AnimatedCard>
+            </div>
+
+            {/* Liste des messages */}
+            <AnimatedCard delay={0.5} className="card-mobile">
+              <div className="flex items-center gap-3 mb-6">
+                <MessageSquare className="text-blue-400" size={24} />
+                <h2 className="text-xl font-semibold text-light">Messages Reçus</h2>
+                <span className="px-2 py-1 bg-blue-500/10 text-blue-400 rounded-full text-sm">
+                  {messages.length}
+                </span>
+              </div>
+
+              <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin">
+                {messages.length > 0 ? (
+                  messages.map((message, index) => (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.6 + index * 0.1 }}
+                      className={`p-4 rounded-lg border transition-all ${
+                        message.status === 'nouveau' 
+                          ? 'bg-blue-500/10 border-blue-500/20' 
+                          : 'bg-gray-700/50 border-gray-600'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-light font-medium">{message.name}</h3>
+                            {message.status === 'nouveau' && (
+                              <span className="px-2 py-1 bg-orange-500/10 text-orange-400 rounded-full text-xs">
+                                Nouveau
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-gray-300 text-sm mb-2">{message.subject}</p>
+                          <p className="text-gray-400 text-sm line-clamp-2">{message.message}</p>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          {message.status === 'nouveau' && (
+                            <button
+                              onClick={() => handleMarkAsRead(message.id)}
+                              className="p-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                              title="Marquer comme lu"
+                            >
+                              <CheckCircle size={16} className="text-white" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteMessage(message.id)}
+                            className="p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                            title="Supprimer"
+                          >
+                            <AlertCircle size={16} className="text-white" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center gap-4">
+                          <span>📧 {message.email}</span>
+                          {message.phone && <span>📞 {message.phone}</span>}
+                        </div>
+                        <span>{formatDate(message.timestamp)}</span>
+                      </div>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <MessageSquare className="mx-auto text-gray-600 mb-4" size={48} />
+                    <p className="text-gray-400">Aucun message reçu</p>
+                  </div>
+                )}
+              </div>
+            </AnimatedCard>
+          </div>
+        );
       case 'news':
         return <NewsManager />;
       default:
@@ -352,50 +528,6 @@ const AdminDashboard: React.FC = () => {
               </AnimatedCard>
             </div>
 
-            {/* Statistiques détaillées réelles */}
-            <AnimatedCard delay={0.7} className="card-mobile">
-              <div className="flex items-center gap-3 mb-6">
-                <Activity className="text-purple-400" size={24} />
-                <h2 className="text-xl font-semibold text-light">Statistiques du Système</h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-300 text-sm">Utilisateurs actifs</span>
-                    <span className="text-light text-sm font-medium">{USERS.length}</span>
-                  </div>
-                  <ProgressBar progress={(USERS.length / 10) * 100} color="green" />
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-300 text-sm">Formulaires créés</span>
-                    <span className="text-light text-sm font-medium">
-                      {JSON.parse(localStorage.getItem('metrotech_drafts') || '[]').length}
-                    </span>
-                  </div>
-                  <ProgressBar 
-                    progress={Math.min(100, (JSON.parse(localStorage.getItem('metrotech_drafts') || '[]').length / 50) * 100)} 
-                    color="blue" 
-                  />
-                </div>
-
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-gray-300 text-sm">Actualités publiées</span>
-                    <span className="text-light text-sm font-medium">
-                      {JSON.parse(localStorage.getItem('metrotech_news') || '[]').filter((n: any) => n.published).length}
-                    </span>
-                  </div>
-                  <ProgressBar 
-                    progress={Math.min(100, (JSON.parse(localStorage.getItem('metrotech_news') || '[]').filter((n: any) => n.published).length / 20) * 100)} 
-                    color="orange" 
-                  />
-                </div>
-              </div>
-            </AnimatedCard>
-
             {/* Actions rapides fonctionnelles */}
             <AnimatedCard delay={0.8} className="bg-gradient-to-r from-primary-600/10 to-secondary-600/10 border border-primary-500/20 rounded-xl p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -435,13 +567,18 @@ const AdminDashboard: React.FC = () => {
                 </motion.button>
                 
                 <motion.button 
-                  onClick={() => window.open('/login', '_blank')}
-                  className="bg-light/10 hover:bg-light/20 text-light p-4 rounded-lg transition-all text-center touch-manipulation"
+                  onClick={() => setActiveTab('messages')}
+                  className="bg-light/10 hover:bg-light/20 text-light p-4 rounded-lg transition-all text-center touch-manipulation relative"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <FileText size={24} className="mb-2 mx-auto" />
-                  <span className="block font-medium text-sm">Voir site public</span>
+                  <MessageSquare size={24} className="mb-2 mx-auto" />
+                  <span className="block font-medium text-sm">Voir messages</span>
+                  {messages.filter(m => m.status === 'nouveau').length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">
+                      {messages.filter(m => m.status === 'nouveau').length}
+                    </span>
+                  )}
                 </motion.button>
               </div>
             </AnimatedCard>
@@ -477,7 +614,7 @@ const AdminDashboard: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all relative ${
                 activeTab === tab.id
                   ? 'bg-primary-500 text-white'
                   : 'text-gray-400 hover:text-white hover:bg-gray-700'
@@ -485,6 +622,11 @@ const AdminDashboard: React.FC = () => {
             >
               <Icon size={18} />
               <span className="hidden sm:inline">{tab.label}</span>
+              {tab.id === 'messages' && messages.filter(m => m.status === 'nouveau').length > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">
+                  {messages.filter(m => m.status === 'nouveau').length}
+                </span>
+              )}
             </button>
           );
         })}
