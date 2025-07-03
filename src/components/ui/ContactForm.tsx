@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { Send, CheckCircle, AlertCircle } from 'lucide-react';
+import { Send, CheckCircle, AlertCircle, Copy, Mail, Phone } from 'lucide-react';
 import Button from './Button';
-import { sendEmail } from '../../services/email';
 
 interface FormState {
   name: string;
@@ -32,6 +31,7 @@ const ContactForm: React.FC = () => {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [showEmailOptions, setShowEmailOptions] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -67,6 +67,25 @@ const ContactForm: React.FC = () => {
     }
   };
 
+  const generateEmailContent = () => {
+    const emailBody = `Bonjour METROTECH INSTRUMENT SARL,
+
+Nom: ${formState.name}
+Email: ${formState.email}
+Téléphone: ${formState.phone || 'Non fourni'}
+
+Objet: ${formState.subject}
+
+Message:
+${formState.message}
+
+---
+Message envoyé depuis le site web METROTECH
+Date: ${new Date().toLocaleDateString('fr-FR')}`;
+
+    return emailBody;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -74,26 +93,68 @@ const ContactForm: React.FC = () => {
     
     setStatus('submitting');
     
-    try {
-      await sendEmail(formState);
+    // Simuler un délai de traitement
+    setTimeout(() => {
+      setShowEmailOptions(true);
       setStatus('success');
-      setFormState({
-        name: '',
-        email: '',
-        phone: '',
-        subject: '',
-        message: ''
-      });
       
+      // Sauvegarder le message dans localStorage pour l'admin
+      const messageData = {
+        id: `msg_${Date.now()}`,
+        ...formState,
+        timestamp: new Date().toISOString(),
+        status: 'nouveau'
+      };
+      
+      const existingMessages = JSON.parse(localStorage.getItem('metrotech_messages') || '[]');
+      existingMessages.unshift(messageData);
+      localStorage.setItem('metrotech_messages', JSON.stringify(existingMessages));
+      
+      // Reset après 5 secondes
       setTimeout(() => {
         setStatus('idle');
-      }, 3000);
-    } catch (error) {
-      setStatus('error');
-      setTimeout(() => {
-        setStatus('idle');
-      }, 3000);
+        setShowEmailOptions(false);
+        setFormState({
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
+      }, 5000);
+    }, 1500);
+  };
+
+  const openEmailClient = () => {
+    const subject = encodeURIComponent(`[METROTECH] ${formState.subject}`);
+    const body = encodeURIComponent(generateEmailContent());
+    const mailtoLink = `mailto:mikoustane0@gmail.com?subject=${subject}&body=${body}`;
+    window.open(mailtoLink, '_blank');
+  };
+
+  const copyToClipboard = async () => {
+    const emailContent = `Email: mikoustane0@gmail.com
+Objet: [METROTECH] ${formState.subject}
+
+${generateEmailContent()}`;
+    
+    try {
+      await navigator.clipboard.writeText(emailContent);
+      alert('Contenu copié dans le presse-papiers !');
+    } catch (err) {
+      // Fallback pour les navigateurs qui ne supportent pas l'API clipboard
+      const textArea = document.createElement('textarea');
+      textArea.value = emailContent;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Contenu copié dans le presse-papiers !');
     }
+  };
+
+  const callPhone = () => {
+    window.open('tel:+22505468685', '_self');
   };
 
   return (
@@ -104,19 +165,53 @@ const ContactForm: React.FC = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {status === 'success' ? (
+      {status === 'success' && showEmailOptions ? (
         <motion.div 
           className="flex flex-col items-center justify-center py-8 text-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
           <CheckCircle size={48} className="text-green-500 mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">
-            Message envoyé avec succès !
+          <h3 className="text-xl font-semibold text-white mb-4">
+            Message préparé avec succès !
           </h3>
-          <p className="text-gray-300">
-            Nous vous répondrons dans les plus brefs délais.
+          <p className="text-gray-300 mb-6">
+            Choisissez votre méthode de contact préférée :
           </p>
+          
+          <div className="space-y-4 w-full max-w-md">
+            <Button 
+              onClick={openEmailClient}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              icon={<Mail size={18} />}
+            >
+              Ouvrir dans votre client email
+            </Button>
+            
+            <Button 
+              onClick={copyToClipboard}
+              variant="outline"
+              className="w-full border-gray-600 text-gray-300 hover:bg-gray-700"
+              icon={<Copy size={18} />}
+            >
+              Copier le message
+            </Button>
+            
+            <Button 
+              onClick={callPhone}
+              className="w-full bg-green-600 hover:bg-green-700"
+              icon={<Phone size={18} />}
+            >
+              Appeler directement
+            </Button>
+          </div>
+          
+          <div className="mt-6 p-4 bg-gray-700 rounded-lg">
+            <p className="text-sm text-gray-300">
+              <strong>Email:</strong> mikoustane0@gmail.com<br />
+              <strong>Téléphone:</strong> +225 05 46 86 85 71
+            </p>
+          </div>
         </motion.div>
       ) : status === 'error' ? (
         <motion.div 
@@ -246,8 +341,14 @@ const ContactForm: React.FC = () => {
             icon={<Send size={18} />}
             iconPosition="right"
           >
-            {status === 'submitting' ? 'Envoi en cours...' : 'Envoyer le message'}
+            {status === 'submitting' ? 'Préparation...' : 'Préparer le message'}
           </Button>
+          
+          <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <p className="text-blue-400 text-sm text-center">
+              💡 Votre message sera préparé pour envoi via votre client email ou copié pour envoi manuel
+            </p>
+          </div>
         </>
       )}
     </motion.form>

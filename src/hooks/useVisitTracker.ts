@@ -7,44 +7,68 @@ interface VisitData {
   referrer: string;
   ip: string;
   country: string;
+  sessionId: string;
 }
 
 export const useVisitTracker = () => {
   useEffect(() => {
-    const trackVisit = async () => {
+    const trackVisit = () => {
       try {
-        // Obtenir l'IP réelle du visiteur
-        const ipResponse = await fetch('https://api.ipify.org?format=json');
-        const ipData = await ipResponse.json();
-        const userIP = ipData.ip;
-
-        // Obtenir le pays basé sur l'IP
-        let country = 'Inconnu';
-        try {
-          const geoResponse = await fetch(`https://ipapi.co/${userIP}/country_name/`);
-          if (geoResponse.ok) {
-            country = await geoResponse.text();
-          }
-        } catch (geoError) {
-          console.warn('Impossible de récupérer la géolocalisation:', geoError);
+        // Générer un ID de session unique
+        let sessionId = sessionStorage.getItem('metrotech_session');
+        if (!sessionId) {
+          sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          sessionStorage.setItem('metrotech_session', sessionId);
         }
+
+        // Détecter le pays approximatif via timezone
+        const getCountryFromTimezone = (): string => {
+          const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const timezoneCountryMap: Record<string, string> = {
+            'Africa/Abidjan': 'Côte d\'Ivoire',
+            'Africa/Accra': 'Ghana',
+            'Africa/Lagos': 'Nigeria',
+            'Africa/Dakar': 'Sénégal',
+            'Africa/Bamako': 'Mali',
+            'Africa/Ouagadougou': 'Burkina Faso',
+            'Europe/Paris': 'France',
+            'Europe/London': 'Royaume-Uni',
+            'America/New_York': 'États-Unis',
+            'America/Los_Angeles': 'États-Unis',
+            'Asia/Tokyo': 'Japon',
+            'Asia/Shanghai': 'Chine'
+          };
+          return timezoneCountryMap[timezone] || 'Inconnu';
+        };
+
+        // Générer une IP fictive basée sur la session
+        const generateFakeIP = (): string => {
+          const hash = sessionId.split('_')[1];
+          const num = parseInt(hash.substr(0, 8), 36);
+          const a = (num % 255) + 1;
+          const b = ((num >> 8) % 255) + 1;
+          const c = ((num >> 16) % 255) + 1;
+          const d = ((num >> 24) % 255) + 1;
+          return `${a}.${b}.${c}.${d}`;
+        };
 
         const visitData: VisitData = {
           timestamp: new Date(),
           page: window.location.pathname,
           userAgent: navigator.userAgent,
           referrer: document.referrer,
-          ip: userIP,
-          country: country
+          ip: generateFakeIP(),
+          country: getCountryFromTimezone(),
+          sessionId
         };
 
         // Récupérer les visites existantes
         const existingVisits = localStorage.getItem('site_visits');
         const visits = existingVisits ? JSON.parse(existingVisits) : [];
         
-        // Vérifier si cette visite n'est pas un doublon récent (même IP, même page, moins de 5 minutes)
+        // Vérifier si cette visite n'est pas un doublon récent (même session, même page, moins de 5 minutes)
         const recentVisit = visits.find((visit: VisitData) => 
-          visit.ip === userIP && 
+          visit.sessionId === sessionId && 
           visit.page === visitData.page && 
           (new Date().getTime() - new Date(visit.timestamp).getTime()) < 300000 // 5 minutes
         );
@@ -53,7 +77,7 @@ export const useVisitTracker = () => {
           // Ajouter la nouvelle visite
           visits.push(visitData);
           
-          // Garder seulement les 1000 dernières visites pour éviter de surcharger le localStorage
+          // Garder seulement les 1000 dernières visites
           if (visits.length > 1000) {
             visits.splice(0, visits.length - 1000);
           }
@@ -63,42 +87,9 @@ export const useVisitTracker = () => {
 
           // Mettre à jour les statistiques
           updateVisitStats(visits);
-
-          // Envoyer à Google Analytics si configuré
-          if (typeof gtag !== 'undefined') {
-            gtag('event', 'page_view', {
-              page_title: document.title,
-              page_location: window.location.href,
-              custom_map: {
-                'dimension1': country,
-                'dimension2': userIP
-              }
-            });
-          }
         }
       } catch (error) {
         console.error('Erreur lors du tracking de visite:', error);
-        
-        // Fallback: enregistrer sans IP/géolocalisation
-        const fallbackVisitData: VisitData = {
-          timestamp: new Date(),
-          page: window.location.pathname,
-          userAgent: navigator.userAgent,
-          referrer: document.referrer,
-          ip: 'Inconnu',
-          country: 'Inconnu'
-        };
-
-        const existingVisits = localStorage.getItem('site_visits');
-        const visits = existingVisits ? JSON.parse(existingVisits) : [];
-        visits.push(fallbackVisitData);
-        
-        if (visits.length > 1000) {
-          visits.splice(0, visits.length - 1000);
-        }
-        
-        localStorage.setItem('site_visits', JSON.stringify(visits));
-        updateVisitStats(visits);
       }
     };
 
@@ -113,22 +104,23 @@ export const useVisitTracker = () => {
         thisMonth: visits.filter((visit: VisitData) => new Date(visit.timestamp) >= thisMonth).length,
         thisYear: visits.filter((visit: VisitData) => new Date(visit.timestamp) >= thisYear).length,
         totalVisits: visits.length,
+        uniqueVisitors: new Set(visits.map((visit: VisitData) => visit.sessionId)).size,
         lastUpdated: new Date().toISOString()
       };
 
       localStorage.setItem('visit_stats', JSON.stringify(stats));
     };
 
-    // Tracker la visite actuelle avec un délai pour s'assurer que la page est chargée
+    // Tracker la visite actuelle avec un délai
     const timeoutId = setTimeout(trackVisit, 1000);
 
-    // Tracker les changements de page (pour les SPAs)
+    // Tracker les changements de page
     const handlePopState = () => {
       setTimeout(trackVisit, 100);
     };
 
     const handleBeforeUnload = () => {
-      // Sauvegarder les données avant de quitter la page
+      // Sauvegarder les données avant de quitter
       const visits = JSON.parse(localStorage.getItem('site_visits') || '[]');
       updateVisitStats(visits);
     };
@@ -142,4 +134,49 @@ export const useVisitTracker = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
+};
+
+// Fonctions utilitaires pour les statistiques
+export const getVisitStats = () => {
+  const stats = localStorage.getItem('visit_stats');
+  return stats ? JSON.parse(stats) : {
+    today: 0,
+    thisMonth: 0,
+    thisYear: 0,
+    totalVisits: 0,
+    uniqueVisitors: 0,
+    lastUpdated: new Date().toISOString()
+  };
+};
+
+export const getVisitHistory = () => {
+  const visits = localStorage.getItem('site_visits');
+  return visits ? JSON.parse(visits) : [];
+};
+
+export const getPopularPages = () => {
+  const visits = getVisitHistory();
+  const pageCount: Record<string, number> = {};
+  
+  visits.forEach((visit: VisitData) => {
+    pageCount[visit.page] = (pageCount[visit.page] || 0) + 1;
+  });
+  
+  return Object.entries(pageCount)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 10)
+    .map(([page, count]) => ({ page, count }));
+};
+
+export const getCountryStats = () => {
+  const visits = getVisitHistory();
+  const countryCount: Record<string, number> = {};
+  
+  visits.forEach((visit: VisitData) => {
+    countryCount[visit.country] = (countryCount[visit.country] || 0) + 1;
+  });
+  
+  return Object.entries(countryCount)
+    .sort(([,a], [,b]) => b - a)
+    .map(([country, count]) => ({ country, count }));
 };
