@@ -57,8 +57,8 @@ const Contact: React.FC = () => {
   return (
     <>
       <SEOHelmet 
-        title="Contact - METROTECH INSTRUMENT SARL | Devis Métrologie Abidjan Côte d'Ivoire"
-        description="Contactez METROTECH INSTRUMENT SARL à Abidjan pour vos besoins en métrologie. Devis gratuit, étalonnage, vérification. Koumassi SOPIM, +225 05 46 86 85 71"
+        title="Contact - METROTECH Devis Métrologie Abidjan"
+        description="Contactez METROTECH INSTRUMENT SARL à Abidjan pour vos besoins en métrologie. Devis gratuit, étalonnage, vérification. Koumassi SOPIM."
         keywords="contact METROTECH, devis métrologie, Abidjan, Koumassi SOPIM, téléphone, email, adresse"
         url="https://metrotech-ci.com/contact"
       />

@@ -12,8 +12,8 @@ interface SEOHelmetProps {
 }
 
 const SEOHelmet: React.FC<SEOHelmetProps> = ({
-  title = "METROTECH INSTRUMENT SARL - Expert en Métrologie Côte d'Ivoire",
-  description = "Expert en métrologie à Abidjan, Côte d'Ivoire. Services d'étalonnage, vérification et réparation d'instruments de mesure pour tous secteurs.",
+  title = "METROTECH - Expert Métrologie Côte d'Ivoire",
+  description = "Expert en métrologie à Abidjan. Étalonnage, vérification et réparation d'instruments de mesure pour tous secteurs en Côte d'Ivoire.",
   keywords = "métrologie Côte d'Ivoire, étalonnage Abidjan, instruments de mesure, calibration, vérification, METROTECH",
   image = "https://image.noelshack.com/fichiers/2024/44/3/1730323042-logom1.png",
   url = "https://metrotech-ci.com/",

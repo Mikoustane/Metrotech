@@ -189,7 +189,7 @@ const ServiceDetail: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>{service.title} - METROTECH INSTRUMENT SARL | Métrologie Côte d'Ivoire</title>
+        <title>{service.title} - METROTECH Métrologie Côte d'Ivoire</title>
         <meta name="description" content={`${service.description} Services METROTECH en Côte d'Ivoire : étalonnage, vérification, maintenance. Devis gratuit à Abidjan.`} />
         <meta name="keywords" content={`${service.title}, métrologie, étalonnage, METROTECH, Côte d'Ivoire, Abidjan`} />
         <link rel="canonical" href={`https://metrotech-ci.com/services/${serviceId}`} />

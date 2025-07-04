@@ -191,8 +191,8 @@ const Services: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Services de Métrologie - METROTECH INSTRUMENT SARL | Étalonnage Côte d'Ivoire</title>
-        <meta name="description" content="Découvrez nos services de métrologie en Côte d'Ivoire : étalonnage BTP, laboratoires, industries, hôpitaux, analyse eau et surveillance température. Expert METROTECH à Abidjan." />
+        <title>Services Métrologie - METROTECH Étalonnage Abidjan</title>
+        <meta name="description" content="Découvrez nos services de métrologie en Côte d'Ivoire : étalonnage BTP, laboratoires, industries, hôpitaux, analyse eau et surveillance température." />
         <meta name="keywords" content="services métrologie, étalonnage BTP, laboratoire Abidjan, industrie Côte d'Ivoire, hôpital, analyse eau, température hygrométrie" />
         <link rel="canonical" href="https://metrotech-ci.com/services" />
       </Helmet>

@@ -80,8 +80,8 @@ const About: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>À Propos - METROTECH INSTRUMENT SARL | Expert Métrologie Abidjan Côte d'Ivoire</title>
-        <meta name="description" content="Découvrez METROTECH INSTRUMENT SARL, expert en métrologie à Abidjan. Notre histoire, notre équipe et nos services d'étalonnage en Côte d'Ivoire depuis 2015." />
+        <title>À Propos - METROTECH Expert Métrologie Abidjan</title>
+        <meta name="description" content="Découvrez METROTECH INSTRUMENT SARL, expert en métrologie à Abidjan. Notre histoire, équipe et services d'étalonnage en Côte d'Ivoire." />
         <meta name="keywords" content="METROTECH, métrologie Abidjan, expert étalonnage, Jean Paul Appoutri, Côte d'Ivoire, histoire entreprise" />
         <link rel="canonical" href="https://metrotech-ci.com/about" />
       </Helmet>
