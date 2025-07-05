@@ -108,23 +108,22 @@ const Home: React.FC = () => {
 
   // État pour les actualités
   const [supabaseNews, setSupabaseNews] = useState<Actualite[]>([]);
-  const [localNewsRaw] = useLocalStorage<string>('metrotech_news', '[]');
+  const [localNewsData] = useLocalStorage<NewsItem[]>('metrotech_news', []);
   const [isLoadingSupabase, setIsLoadingSupabase] = useState(true);
 
   // Conversion sécurisée des actualités locales avec gestion des dates
   const localNews = useMemo(() => {
     try {
-      const parsed = JSON.parse(localNewsRaw);
-      return parsed.map((item: any) => ({
+      return localNewsData.map((item: any) => ({
         ...item,
-        createdAt: new Date(item.createdAt),
-        updatedAt: new Date(item.updatedAt)
+        createdAt: typeof item.createdAt === 'string' ? new Date(item.createdAt) : item.createdAt,
+        updatedAt: typeof item.updatedAt === 'string' ? new Date(item.updatedAt) : item.updatedAt
       }));
     } catch (error) {
-      console.error('Erreur lors du parsing des actualités locales:', error);
+      console.error('Erreur lors du traitement des actualités locales:', error);
       return [];
     }
-  }, [localNewsRaw]);
+  }, [localNewsData]);
 
   // Charger les actualités Supabase
   useEffect(() => {
