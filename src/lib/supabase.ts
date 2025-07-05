@@ -24,7 +24,6 @@ export const actualitesService = {
     const { data, error } = await supabase
       .from('actualites')
       .select('*')
-      .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Erreur lors de la récupération des actualités:', error)
