@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, useScroll, useTransform } from 'framer-motion';
@@ -19,6 +19,7 @@ import OptimizedImage from '../components/ui/OptimizedImage';
 import AnimatedCard from '../components/ui/AnimatedCard';
 import SEOHelmet from '../components/SEOHelmet';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { actualitesService, Actualite } from '../lib/supabase';
 
 interface NewsItem {
   id: string;
@@ -43,9 +44,31 @@ const Home: React.FC = () => {
   const y = useTransform(scrollYProgress, [0, 1], [0, 200]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [0.7, 0]);
 
-  // Récupérer les actualités publiées
-  const [news] = useLocalStorage<NewsItem[]>('metrotech_news', []);
-  const publishedNews = news.filter(item => item.published).slice(0, 3);
+  // État pour les actualités
+  const [supabaseNews, setSupabaseNews] = useState<Actualite[]>([]);
+  const [localNews] = useLocalStorage<NewsItem[]>('metrotech_news', []);
+  const [isLoadingSupabase, setIsLoadingSupabase] = useState(true);
+
+  // Charger les actualités Supabase
+  useEffect(() => {
+    const loadSupabaseNews = async () => {
+      try {
+        const data = await actualitesService.getAll();
+        setSupabaseNews(data.slice(0, 3)); // Prendre les 3 dernières
+      } catch (error) {
+        console.error('Erreur lors du chargement des actualités Supabase:', error);
+      } finally {
+        setIsLoadingSupabase(false);
+      }
+    };
+
+    loadSupabaseNews();
+  }, []);
+
+  // Utiliser les actualités Supabase en priorité, sinon les locales
+  const publishedNews = supabaseNews.length > 0 
+    ? supabaseNews 
+    : localNews.filter(item => item.published).slice(0, 3);
 
   const services = [
     {
@@ -224,44 +247,65 @@ const Home: React.FC = () => {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <SectionHeading 
               title="Actualités & Événements"
-              subtitle="Suivez nos dernières participations et actions terrain"
+              subtitle={
+                supabaseNews.length > 0 
+                  ? "Suivez nos dernières actualités en temps réel" 
+                  : "Suivez nos dernières participations et actions terrain"
+              }
               centered
               light
             />
             
-            {publishedNews.length > 0 ? (
+            {isLoadingSupabase ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+                <span className="ml-3 text-gray-400">Chargement des actualités...</span>
+              </div>
+            ) : publishedNews.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {publishedNews.map((newsItem, index) => (
-                  <AnimatedCard 
-                    key={newsItem.id}
-                    delay={0.3 + index * 0.1}
-                    className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl border border-gray-700 hover:border-primary-500/50 transition-all duration-300"
-                    hover
-                  >
-                    {newsItem.image && (
-                      <div className="relative h-48 overflow-hidden">
-                        <OptimizedImage 
-                          src={newsItem.image}
-                          alt={newsItem.legend || newsItem.title}
-                          className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300"
-                        />
-                      </div>
-                    )}
-                    <div className="p-6">
-                      <h4 className="text-xl font-bold text-white mb-2 line-clamp-2">{newsItem.title}</h4>
-                      {newsItem.subtitle && (
-                        <p className="text-primary-400 text-sm mb-2">{newsItem.subtitle}</p>
+                {publishedNews.map((newsItem, index) => {
+                  // Adapter les données selon la source (Supabase ou local)
+                  const isSupabaseNews = 'titre' in newsItem;
+                  const title = isSupabaseNews ? (newsItem as Actualite).titre : (newsItem as NewsItem).title;
+                  const content = isSupabaseNews ? (newsItem as Actualite).contenu : (newsItem as NewsItem).content;
+                  const image = isSupabaseNews ? (newsItem as Actualite).image_url : (newsItem as NewsItem).image;
+                  const createdAt = isSupabaseNews ? (newsItem as Actualite).created_at : (newsItem as NewsItem).createdAt;
+                  const subtitle = isSupabaseNews ? (newsItem as Actualite).categorie : (newsItem as NewsItem).subtitle;
+
+                  return (
+                    <AnimatedCard 
+                      key={isSupabaseNews ? (newsItem as Actualite).id : (newsItem as NewsItem).id}
+                      delay={0.3 + index * 0.1}
+                      className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl border border-gray-700 hover:border-primary-500/50 transition-all duration-300"
+                      hover
+                    >
+                      {image && (
+                        <div className="relative h-48 overflow-hidden">
+                          <OptimizedImage 
+                            src={image}
+                            alt={title}
+                            className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300"
+                          />
+                        </div>
                       )}
-                      <p className="text-gray-300 text-sm mb-4 line-clamp-3">{newsItem.content}</p>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>{new Date(newsItem.createdAt).toLocaleDateString('fr-FR')}</span>
-                        <span className="px-2 py-1 bg-primary-500/10 text-primary-400 rounded-full">
-                          METROTECH
-                        </span>
+                      <div className="p-6">
+                        <h4 className="text-xl font-bold text-white mb-2 line-clamp-2">{title}</h4>
+                        {subtitle && (
+                          <p className="text-primary-400 text-sm mb-2">{subtitle}</p>
+                        )}
+                        <p className="text-gray-300 text-sm mb-4 line-clamp-3">{content}</p>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span>
+                            {new Date(createdAt!).toLocaleDateString('fr-FR')}
+                          </span>
+                          <span className="px-2 py-1 bg-primary-500/10 text-primary-400 rounded-full">
+                            {isSupabaseNews ? 'Supabase' : 'METROTECH'}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </AnimatedCard>
-                ))}
+                    </AnimatedCard>
+                  );
+                })}
               </div>
             ) : (
               <AnimatedCard 

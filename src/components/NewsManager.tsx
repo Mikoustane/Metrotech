@@ -9,9 +9,13 @@ import {
   X,
   Calendar,
   Eye,
-  Upload
+  Upload,
+  Database,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import AnimatedCard from './ui/AnimatedCard';
+import SupabaseNewsManager from './SupabaseNewsManager';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 interface NewsItem {
@@ -27,6 +31,7 @@ interface NewsItem {
 }
 
 const NewsManager: React.FC = () => {
+  const [useSupabase, setUseSupabase] = useState(true);
   const [news, setNews] = useLocalStorage<NewsItem[]>('metrotech_news', []);
   const [isEditing, setIsEditing] = useState(false);
   const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
@@ -116,11 +121,59 @@ const NewsManager: React.FC = () => {
     }
   };
 
+  // Si Supabase est activé, utiliser le composant Supabase
+  if (useSupabase) {
+    return (
+      <div className="space-y-6">
+        {/* Toggle pour changer de mode */}
+        <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700">
+          <div className="flex items-center gap-3">
+            <Database className="text-blue-400" size={24} />
+            <div>
+              <h3 className="text-white font-medium">Mode de stockage</h3>
+              <p className="text-gray-400 text-sm">
+                {useSupabase ? 'Base de données Supabase (en ligne)' : 'Stockage local (hors ligne)'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setUseSupabase(!useSupabase)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            {useSupabase ? <Wifi size={18} /> : <WifiOff size={18} />}
+            {useSupabase ? 'Passer en local' : 'Passer en Supabase'}
+          </button>
+        </div>
+
+        <SupabaseNewsManager />
+      </div>
+    );
+  }
+
+  // Mode local (code existant)
   return (
     <div className="p-6 space-y-6">
+      {/* Toggle pour changer de mode */}
+      <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700">
+        <div className="flex items-center gap-3">
+          <WifiOff className="text-gray-400" size={24} />
+          <div>
+            <h3 className="text-white font-medium">Mode local</h3>
+            <p className="text-gray-400 text-sm">Stockage dans le navigateur (localStorage)</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setUseSupabase(!useSupabase)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+        >
+          <Database size={18} />
+          Passer en Supabase
+        </button>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Gestion des Actualités</h1>
+        <h1 className="text-3xl font-bold text-white">Gestion des Actualités (Local)</h1>
         <button
           onClick={() => setIsEditing(true)}
           className="flex items-center gap-2 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors"
@@ -263,7 +316,7 @@ const NewsManager: React.FC = () => {
       <div className="space-y-4">
         {news.length === 0 ? (
           <AnimatedCard className="text-center py-12">
-            <Calendar className="mx-auto text-gray-600 mb-4\" size={48} />
+            <Calendar className="mx-auto text-gray-600 mb-4" size={48} />
             <h3 className="text-xl font-semibold text-gray-400 mb-2">
               Aucune actualité
             </h3>
