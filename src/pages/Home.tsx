@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, useScroll, useTransform } from 'framer-motion';
@@ -33,6 +33,68 @@ interface NewsItem {
   published: boolean;
 }
 
+// Composant NewsCard extrait pour optimiser les performances
+interface NewsCardProps {
+  newsItem: NewsItem | Actualite;
+  index: number;
+  isSupabaseNews: boolean;
+}
+
+const NewsCard: React.FC<NewsCardProps> = React.memo(({ newsItem, index, isSupabaseNews }) => {
+  // Adapter les données selon la source (Supabase ou local)
+  const title = isSupabaseNews ? (newsItem as Actualite).titre : (newsItem as NewsItem).title;
+  const content = isSupabaseNews ? (newsItem as Actualite).contenu : (newsItem as NewsItem).content;
+  const image = isSupabaseNews ? (newsItem as Actualite).image_url : (newsItem as NewsItem).image;
+  const createdAt = isSupabaseNews ? (newsItem as Actualite).created_at : (newsItem as NewsItem).createdAt;
+  const subtitle = isSupabaseNews ? (newsItem as Actualite).categorie : (newsItem as NewsItem).subtitle;
+
+  // Gérer la conversion de date de manière sûre
+  const formattedDate = useMemo(() => {
+    try {
+      const date = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
+      return date instanceof Date && !isNaN(date.getTime()) 
+        ? date.toLocaleDateString('fr-FR')
+        : 'Date non disponible';
+    } catch {
+      return 'Date non disponible';
+    }
+  }, [createdAt]);
+
+  return (
+    <AnimatedCard 
+      key={isSupabaseNews ? (newsItem as Actualite).id : (newsItem as NewsItem).id}
+      delay={0.3 + index * 0.1}
+      className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl border border-gray-700 hover:border-primary-500/50 transition-all duration-300"
+      hover
+    >
+      {image && (
+        <div className="relative h-48 overflow-hidden">
+          <OptimizedImage 
+            src={image}
+            alt={title}
+            className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300"
+          />
+        </div>
+      )}
+      <div className="p-6">
+        <h4 className="text-xl font-bold text-white mb-2 line-clamp-2">{title}</h4>
+        {subtitle && (
+          <p className="text-primary-400 text-sm mb-2">{subtitle}</p>
+        )}
+        <p className="text-gray-300 text-sm mb-4 line-clamp-3">{content}</p>
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span>{formattedDate}</span>
+          <span className="px-2 py-1 bg-primary-500/10 text-primary-400 rounded-full">
+            {isSupabaseNews ? 'Supabase' : 'METROTECH'}
+          </span>
+        </div>
+      </div>
+    </AnimatedCard>
+  );
+});
+
+NewsCard.displayName = 'NewsCard';
+
 const Home: React.FC = () => {
   const { t } = useTranslation();
   const ref = useRef(null);
@@ -46,8 +108,23 @@ const Home: React.FC = () => {
 
   // État pour les actualités
   const [supabaseNews, setSupabaseNews] = useState<Actualite[]>([]);
-  const [localNews] = useLocalStorage<NewsItem[]>('metrotech_news', []);
+  const [localNewsRaw] = useLocalStorage<string>('metrotech_news', '[]');
   const [isLoadingSupabase, setIsLoadingSupabase] = useState(true);
+
+  // Conversion sécurisée des actualités locales avec gestion des dates
+  const localNews = useMemo(() => {
+    try {
+      const parsed = JSON.parse(localNewsRaw);
+      return parsed.map((item: any) => ({
+        ...item,
+        createdAt: new Date(item.createdAt),
+        updatedAt: new Date(item.updatedAt)
+      }));
+    } catch (error) {
+      console.error('Erreur lors du parsing des actualités locales:', error);
+      return [];
+    }
+  }, [localNewsRaw]);
 
   // Charger les actualités Supabase
   useEffect(() => {
@@ -65,10 +142,13 @@ const Home: React.FC = () => {
     loadSupabaseNews();
   }, []);
 
-  // Utiliser les actualités Supabase en priorité, sinon les locales
-  const publishedNews = supabaseNews.length > 0 
-    ? supabaseNews 
-    : localNews.filter(item => item.published).slice(0, 3);
+  // Utiliser les actualités Supabase en priorité, sinon les locales (mémorisé)
+  const publishedNews = useMemo(() => {
+    if (supabaseNews.length > 0) {
+      return supabaseNews;
+    }
+    return localNews.filter((item: NewsItem) => item.published).slice(0, 3);
+  }, [supabaseNews, localNews]);
 
   const services = [
     {
@@ -263,49 +343,14 @@ const Home: React.FC = () => {
               </div>
             ) : publishedNews.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {publishedNews.map((newsItem, index) => {
-                  // Adapter les données selon la source (Supabase ou local)
-                  const isSupabaseNews = 'titre' in newsItem;
-                  const title = isSupabaseNews ? (newsItem as Actualite).titre : (newsItem as NewsItem).title;
-                  const content = isSupabaseNews ? (newsItem as Actualite).contenu : (newsItem as NewsItem).content;
-                  const image = isSupabaseNews ? (newsItem as Actualite).image_url : (newsItem as NewsItem).image;
-                  const createdAt = isSupabaseNews ? (newsItem as Actualite).created_at : (newsItem as NewsItem).createdAt;
-                  const subtitle = isSupabaseNews ? (newsItem as Actualite).categorie : (newsItem as NewsItem).subtitle;
-
-                  return (
-                    <AnimatedCard 
-                      key={isSupabaseNews ? (newsItem as Actualite).id : (newsItem as NewsItem).id}
-                      delay={0.3 + index * 0.1}
-                      className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl border border-gray-700 hover:border-primary-500/50 transition-all duration-300"
-                      hover
-                    >
-                      {image && (
-                        <div className="relative h-48 overflow-hidden">
-                          <OptimizedImage 
-                            src={image}
-                            alt={title}
-                            className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300"
-                          />
-                        </div>
-                      )}
-                      <div className="p-6">
-                        <h4 className="text-xl font-bold text-white mb-2 line-clamp-2">{title}</h4>
-                        {subtitle && (
-                          <p className="text-primary-400 text-sm mb-2">{subtitle}</p>
-                        )}
-                        <p className="text-gray-300 text-sm mb-4 line-clamp-3">{content}</p>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>
-                            {new Date(createdAt!).toLocaleDateString('fr-FR')}
-                          </span>
-                          <span className="px-2 py-1 bg-primary-500/10 text-primary-400 rounded-full">
-                            {isSupabaseNews ? 'Supabase' : 'METROTECH'}
-                          </span>
-                        </div>
-                      </div>
-                    </AnimatedCard>
-                  );
-                })}
+                {publishedNews.map((newsItem, index) => (
+                  <NewsCard
+                    key={supabaseNews.length > 0 ? (newsItem as Actualite).id : (newsItem as NewsItem).id}
+                    newsItem={newsItem}
+                    index={index}
+                    isSupabaseNews={supabaseNews.length > 0}
+                  />
+                ))}
               </div>
             ) : (
               <AnimatedCard 

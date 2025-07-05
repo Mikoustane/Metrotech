@@ -122,13 +122,39 @@ const SupabaseNewsManager: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      return new Date(dateString).toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return 'Date non disponible';
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validation du fichier
+      if (file.size > 5 * 1024 * 1024) { // 5MB max
+        showMessage('error', 'Fichier trop volumineux (max 5MB)');
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        showMessage('error', 'Veuillez sélectionner une image');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFormData({ ...formData, image_url: event.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   if (isLoading) {
@@ -238,15 +264,49 @@ const SupabaseNewsManager: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                URL de l'image
+                Image
               </label>
-              <input
-                type="url"
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://exemple.com/image.jpg"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
+              
+              {/* Switch entre upload et URL */}
+              <div className="mb-4">
+                <div className="flex gap-4 mb-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="imageMethod"
+                      value="upload"
+                      className="text-primary-500"
+                      defaultChecked
+                    />
+                    <span className="text-gray-300 text-sm">Upload fichier</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="imageMethod"
+                      value="url"
+                      className="text-primary-500"
+                    />
+                    <span className="text-gray-300 text-sm">URL externe</span>
+                  </label>
+                </div>
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500 mb-3"
+                />
+                
+                <input
+                  type="url"
+                  value={formData.image_url}
+                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  placeholder="https://exemple.com/image.jpg"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
               {formData.image_url && (
                 <img 
                   src={formData.image_url} 
@@ -268,6 +328,7 @@ const SupabaseNewsManager: React.FC = () => {
                 value={formData.auteur}
                 onChange={(e) => setFormData({ ...formData, auteur: e.target.value })}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                required
               />
             </div>
 
@@ -380,9 +441,13 @@ const SupabaseNewsManager: React.FC = () => {
           </div>
           <div>
             <div className="text-2xl font-bold text-green-400">
-              {actualites.filter(a => 
-                new Date(a.created_at!).getMonth() === new Date().getMonth()
-              ).length}
+              {actualites.filter(a => {
+                try {
+                  return new Date(a.created_at!).getMonth() === new Date().getMonth();
+                } catch {
+                  return false;
+                }
+              }).length}
             </div>
             <div className="text-gray-400 text-sm">Ce mois</div>
           </div>
