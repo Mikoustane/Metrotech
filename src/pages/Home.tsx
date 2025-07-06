@@ -20,6 +20,7 @@ import AnimatedCard from '../components/ui/AnimatedCard';
 import SEOHelmet from '../components/SEOHelmet';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { actualitesService, Actualite } from '../lib/supabase';
+import { getOptimizedImageUrl, getAnimationConfig, isMobileDevice } from '../utils/mobileDetection';
 
 interface NewsItem {
   id: string;
@@ -41,12 +42,17 @@ interface NewsCardProps {
 }
 
 const NewsCard: React.FC<NewsCardProps> = React.memo(({ newsItem, index, isSupabaseNews }) => {
+  const animationConfig = getAnimationConfig();
+  
   // Adapter les données selon la source (Supabase ou local)
   const title = isSupabaseNews ? (newsItem as Actualite).titre : (newsItem as NewsItem).title;
   const content = isSupabaseNews ? (newsItem as Actualite).contenu : (newsItem as NewsItem).content;
   const image = isSupabaseNews ? (newsItem as Actualite).image_url : (newsItem as NewsItem).image;
   const createdAt = isSupabaseNews ? (newsItem as Actualite).created_at : (newsItem as NewsItem).createdAt;
   const subtitle = isSupabaseNews ? (newsItem as Actualite).categorie : (newsItem as NewsItem).subtitle;
+
+  // Optimiser l'image selon l'appareil
+  const optimizedImage = image ? getOptimizedImageUrl(image) : null;
 
   // Gérer la conversion de date de manière sûre
   const formattedDate = useMemo(() => {
@@ -63,16 +69,17 @@ const NewsCard: React.FC<NewsCardProps> = React.memo(({ newsItem, index, isSupab
   return (
     <AnimatedCard 
       key={isSupabaseNews ? (newsItem as Actualite).id : (newsItem as NewsItem).id}
-      delay={0.3 + index * 0.1}
+      delay={animationConfig.enableComplexAnimations ? 0.3 + index * animationConfig.stagger : 0}
       className="bg-gray-800 rounded-2xl overflow-hidden shadow-xl border border-gray-700 hover:border-primary-500/50 transition-all duration-300"
-      hover
+      hover={animationConfig.enableHoverEffects}
     >
-      {image && (
+      {optimizedImage && (
         <div className="relative h-48 overflow-hidden">
           <OptimizedImage 
-            src={image}
+            src={optimizedImage}
             alt={title}
             className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300"
+            lazy={true}
           />
         </div>
       )}
@@ -98,12 +105,15 @@ NewsCard.displayName = 'NewsCard';
 const Home: React.FC = () => {
   const { t } = useTranslation();
   const ref = useRef(null);
+  const isMobile = isMobileDevice();
+  const animationConfig = getAnimationConfig();
+  
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"]
   });
 
-  const y = useTransform(scrollYProgress, [0, 1], [0, 200]);
+  const y = useTransform(scrollYProgress, [0, 1], [0, animationConfig.enableParallax ? 200 : 0]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [0.7, 0]);
 
   // État pour les actualités
@@ -130,7 +140,9 @@ const Home: React.FC = () => {
     const loadSupabaseNews = async () => {
       try {
         const data = await actualitesService.getAll();
-        setSupabaseNews(data.slice(0, 3)); // Prendre les 3 dernières
+        // Limiter le nombre d'actualités sur mobile
+        const newsLimit = isMobile ? 2 : 3;
+        setSupabaseNews(data.slice(0, newsLimit));
       } catch (error) {
         console.error('Erreur lors du chargement des actualités Supabase:', error);
       } finally {
@@ -139,15 +151,16 @@ const Home: React.FC = () => {
     };
 
     loadSupabaseNews();
-  }, []);
+  }, [isMobile]);
 
   // Utiliser les actualités Supabase en priorité, sinon les locales (mémorisé)
   const publishedNews = useMemo(() => {
     if (supabaseNews.length > 0) {
       return supabaseNews;
     }
-    return localNews.filter((item: NewsItem) => item.published).slice(0, 3);
-  }, [supabaseNews, localNews]);
+    const newsLimit = isMobile ? 2 : 3;
+    return localNews.filter((item: NewsItem) => item.published).slice(0, newsLimit);
+  }, [supabaseNews, localNews, isMobile]);
 
   const services = [
     {
@@ -201,23 +214,25 @@ const Home: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: animationConfig.duration }}
         className="bg-gray-900 no-scrollbar"
       >
         {/* Hero Section */}
         <section ref={ref} className="relative min-h-screen flex items-center overflow-hidden container-stable">
           <div className="absolute inset-0 z-0">
             <div className="absolute inset-0 bg-gradient-to-br from-primary-900/90 via-secondary-900/80 to-gray-900/90" />
-            <motion.div
-              className="absolute inset-0"
-              style={{ y, opacity }}
-            >
-              <OptimizedImage
-                src="https://image.noelshack.com/fichiers/2024/44/3/1730323091-metrotech-1.jpg"
-                alt="METROTECH Hero"
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
+            {animationConfig.enableParallax && (
+              <motion.div
+                className="absolute inset-0"
+                style={{ y, opacity }}
+              >
+                <OptimizedImage
+                  src={getOptimizedImageUrl("https://image.noelshack.com/fichiers/2024/44/3/1730323091-metrotech-1.jpg")}
+                  alt="METROTECH Hero"
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
+            )}
           </div>
 
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-20 container-stable">
@@ -225,13 +240,13 @@ const Home: React.FC = () => {
               className="max-w-4xl hero-content"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: animationConfig.duration }}
             >
               <motion.h1
                 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight text-stable"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                transition={{ duration: animationConfig.duration, delay: 0.2 }}
               >
                 Expert en Métrologie en{' '}
                 <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
@@ -243,7 +258,7 @@ const Home: React.FC = () => {
                 className="text-lg sm:text-xl md:text-2xl text-gray-200 mb-8 max-w-3xl text-stable"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
+                transition={{ duration: animationConfig.duration, delay: 0.3 }}
               >
                 Solutions complètes d'étalonnage, vérification et maintenance d'instruments de mesure
               </motion.p>
@@ -252,7 +267,7 @@ const Home: React.FC = () => {
                 className="flex flex-col sm:flex-row flex-wrap gap-4"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
+                transition={{ duration: animationConfig.duration, delay: 0.4 }}
               >
                 <Link to="/services">
                   <Button
@@ -278,21 +293,23 @@ const Home: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* Scroll Indicator */}
-          <motion.div
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2 hidden sm:block"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1, duration: 0.5 }}
-          >
-            <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">
-              <motion.div
-                className="w-1 h-3 bg-white rounded-full mt-2"
-                animate={{ y: [0, 12, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              />
-            </div>
-          </motion.div>
+          {/* Scroll Indicator - masqué sur mobile */}
+          {!isMobile && (
+            <motion.div
+              className="absolute bottom-8 left-1/2 transform -translate-x-1/2 hidden sm:block"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1, duration: animationConfig.duration }}
+            >
+              <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center">
+                <motion.div
+                  className="w-1 h-3 bg-white rounded-full mt-2"
+                  animate={{ y: [0, 12, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+              </div>
+            </motion.div>
+          )}
         </section>
 
         {/* Services Section */}
@@ -307,7 +324,7 @@ const Home: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {services.map((service, index) => (
                 <Link to={service.link} key={index}>
-                  <AnimatedCard delay={index * 0.1} hover>
+                  <AnimatedCard delay={animationConfig.enableComplexAnimations ? index * animationConfig.stagger : 0} hover={animationConfig.enableHoverEffects}>
                     <ServiceCard
                       title={service.title}
                       description={service.description}
@@ -341,7 +358,7 @@ const Home: React.FC = () => {
                 <span className="ml-3 text-gray-400">Chargement des actualités...</span>
               </div>
             ) : publishedNews.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className={`grid grid-cols-1 ${isMobile ? 'md:grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}>
                 {publishedNews.map((newsItem, index) => (
                   <NewsCard
                     key={supabaseNews.length > 0 ? (newsItem as Actualite).id : (newsItem as NewsItem).id}
@@ -360,17 +377,17 @@ const Home: React.FC = () => {
                   METROTECH INSTRUMENT SARL ÉTAIT PRÉSENT À LA MASTERCLASS ORGANISÉE PAR L'ASSOCIATION DES MÉTROLOGUES DU CREFSEM COMME PARTENAIRE ET AUSSI COMME PANELISTE. MERCI À TOUS POUR VOTRE IMPLICATION. 
                   <span className="block mt-2 font-semibold text-white">(Présenté le 24 mai 2025)</span>
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <AnimatedCard delay={0.4} hover>
+                <div className={`grid grid-cols-1 ${isMobile ? 'gap-4' : 'sm:grid-cols-2 gap-6'}`}>
+                  <AnimatedCard delay={0.4} hover={animationConfig.enableHoverEffects}>
                     <OptimizedImage 
-                      src="https://scontent.fabj7-1.fna.fbcdn.net/v/t39.30808-6/500207401_1056683716558058_8225420519230056849_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=109&ccb=1-7&_nc_sid=833d8c&_nc_ohc=AQCHl-BIRVAQ7kNvwHH7dwC&_nc_oc=AdkNVdFVDg8CabVp2vk-HZA0HmpRYs-huBke6LxKNP6vgYC9ES7DrZzMQt8CssS3FDU&_nc_zt=23&_nc_ht=scontent.fabj7-1.fna&_nc_gid=0RjnumVTkZbkTau2xOZ5nA&oh=00_AfPtqMh73Ut5kAIMQSRn8CJMuvPHzocv-g9JvbO84mHupg&oe=68472816"
+                      src={getOptimizedImageUrl("https://scontent.fabj7-1.fna.fbcdn.net/v/t39.30808-6/500207401_1056683716558058_8225420519230056849_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=109&ccb=1-7&_nc_sid=833d8c&_nc_ohc=AQCHl-BIRVAQ7kNvwHH7dwC&_nc_oc=AdkNVdFVDg8CabVp2vk-HZA0HmpRYs-huBke6LxKNP6vgYC9ES7DrZzMQt8CssS3FDU&_nc_zt=23&_nc_ht=scontent.fabj7-1.fna&_nc_gid=0RjnumVTkZbkTau2xOZ5nA&oh=00_AfPtqMh73Ut5kAIMQSRn8CJMuvPHzocv-g9JvbO84mHupg&oe=68472816")}
                       alt="Événement Metrotech 1"
                       className="w-full h-48 object-cover object-center rounded-lg shadow-md"
                     />
                   </AnimatedCard>
-                  <AnimatedCard delay={0.5} hover>
+                  <AnimatedCard delay={0.5} hover={animationConfig.enableHoverEffects}>
                     <OptimizedImage 
-                      src="https://scontent.fabj7-1.fna.fbcdn.net/v/t39.30808-6/501058991_1056683673224729_4078049321040408501_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=105&ccb=1-7&_nc_sid=833d8c&_nc_ohc=TTv9M1HVCw0Q7kNvwEUfaj7&_nc_oc=Adm9jQtT5cPqbK7VWDX0AYHs_JpzhIO1ZrgZr5r0c8U3eeegntb26f4QZK4i2e8w1P8&_nc_zt=23&_nc_ht=scontent.fabj7-1.fna&_nc_gid=HZt_hNDRNvE8GVRog2QQrA&oh=00_AfMTDZ3n7-j_LdFiiK3pJDDdE0Fg&oe=684743D4"
+                      src={getOptimizedImageUrl("https://scontent.fabj7-1.fna.fbcdn.net/v/t39.30808-6/501058991_1056683673224729_4078049321040408501_n.jpg?stp=cp6_dst-jpg_tt6&_nc_cat=105&ccb=1-7&_nc_sid=833d8c&_nc_ohc=TTv9M1HVCw0Q7kNvwEUfaj7&_nc_oc=Adm9jQtT5cPqbK7VWDX0AYHs_JpzhIO1ZrgZr5r0c8U3eeegntb26f4QZK4i2e8w1P8&_nc_zt=23&_nc_ht=scontent.fabj7-1.fna&_nc_gid=HZt_hNDRNvE8GVRog2QQrA&oh=00_AfMTDZ3n7-j_LdFiiK3pJDDdE0Fg&oe=684743D4")}
                       alt="Événement Metrotech 2"
                       className="w-full h-48 object-cover object-center rounded-lg shadow-md"
                     />

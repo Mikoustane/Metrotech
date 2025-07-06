@@ -13,16 +13,25 @@ import {
   X,
   Globe,
   Shield,
-  Database
+  Database,
+  Newspaper,
+  Smartphone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   activeSection: string;
   setActiveSection: (section: string) => void;
+  isMobile?: boolean;
+  bundleConfig?: any;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  activeSection, 
+  setActiveSection, 
+  isMobile = false,
+  bundleConfig = {}
+}) => {
   const { user, logout } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -30,16 +39,43 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
   // Vérifier si l'utilisateur est admin
   const isAdmin = user?.id === '1';
 
-  const menuItems = [
-    { id: 'accueil', label: 'Accueil', icon: Home, badge: null, shortLabel: 'Home' },
-    { id: 'historique', label: 'Historique', icon: History, badge: null, shortLabel: 'History' },
-    { id: 'sauvegarde', label: 'Sauvegarde', icon: Save, badge: '3', shortLabel: 'Save' },
-    ...(isAdmin ? [
-      { id: 'connexions', label: 'Connexions IP', icon: Globe, badge: null, shortLabel: 'IP' },
-      { id: 'donnees', label: 'Gestionnaire Données', icon: Database, badge: null, shortLabel: 'Data' },
-      { id: 'parametres', label: 'Paramètres', icon: Settings, badge: null, shortLabel: 'Settings' }
-    ] : [])
-  ];
+  // Menu adapté selon l'appareil et les permissions
+  const getMenuItems = () => {
+    const baseItems = [
+      { id: 'accueil', label: 'Accueil', icon: Home, badge: null, shortLabel: 'Home', available: true }
+    ];
+
+    // Ajouter les éléments selon la configuration du bundle
+    if (bundleConfig.loadHistorique) {
+      baseItems.push({ id: 'historique', label: 'Historique', icon: History, badge: null, shortLabel: 'History', available: true });
+    }
+
+    if (bundleConfig.loadSauvegarde) {
+      baseItems.push({ id: 'sauvegarde', label: 'Sauvegarde', icon: Save, badge: '3', shortLabel: 'Save', available: true });
+    }
+
+    // Éléments admin
+    if (isAdmin) {
+      if (bundleConfig.loadConnectionTracker) {
+        baseItems.push({ id: 'connexions', label: 'Connexions IP', icon: Globe, badge: null, shortLabel: 'IP', available: true });
+      }
+      if (bundleConfig.loadDataManager) {
+        baseItems.push({ id: 'donnees', label: 'Gestionnaire Données', icon: Database, badge: null, shortLabel: 'Data', available: true });
+      }
+    }
+
+    // Actualités pour mobile
+    if (isMobile) {
+      baseItems.push({ id: 'actualites', label: 'Actualités', icon: Newspaper, badge: null, shortLabel: 'News', available: true });
+    }
+
+    // Paramètres (toujours disponible mais peut être limité)
+    baseItems.push({ id: 'parametres', label: 'Paramètres', icon: Settings, badge: null, shortLabel: 'Settings', available: true });
+
+    return baseItems;
+  };
+
+  const menuItems = getMenuItems();
 
   // Fermer le menu mobile quand on change de section
   useEffect(() => {
@@ -129,7 +165,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
                     <p className="text-light font-medium text-sm truncate">{user?.name}</p>
                     <p className="text-primary-100 text-xs">{user?.role}</p>
                   </div>
-                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                  {isMobile && (
+                    <div className="flex items-center gap-1">
+                      <Smartphone size={14} className="text-light/60" />
+                      <span className="text-xs text-light/60">Mobile</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -167,23 +208,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
                     );
                   })}
                 </ul>
-
-                {/* Settings pour non-admin */}
-                {!isAdmin && (
-                  <div className="mt-8 pt-4 border-t border-dark-700">
-                    <button 
-                      onClick={() => handleMenuItemClick('parametres')}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 touch-manipulation ${
-                        activeSection === 'parametres'
-                          ? 'bg-primary-500 text-light shadow-mobile'
-                          : 'text-gray-300 hover:bg-dark-700 hover:text-light'
-                      }`}
-                    >
-                      <Settings size={20} />
-                      <span className="font-medium">Paramètres</span>
-                    </button>
-                  </div>
-                )}
               </nav>
 
               {/* Logout */}
@@ -302,28 +326,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
             );
           })}
         </ul>
-
-        {/* Settings pour non-admin */}
-        {!isAdmin && !isCollapsed && (
-          <motion.div 
-            className="mt-8 pt-4 border-t border-dark-700"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-          >
-            <button 
-              onClick={() => setActiveSection('parametres')}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-sm ${
-                activeSection === 'parametres'
-                  ? 'bg-primary-500 text-light shadow-mobile'
-                  : 'text-gray-300 hover:bg-dark-700 hover:text-light'
-              }`}
-            >
-              <Settings size={16} className="flex-shrink-0" />
-              <span className="font-medium flex-1 text-left">Paramètres</span>
-            </button>
-          </motion.div>
-        )}
       </nav>
 
       {/* Footer */}
