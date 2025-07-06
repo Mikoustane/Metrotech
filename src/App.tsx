@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, Suspense } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Components
 import AppRoutes from './components/AppRoutes';
-import LoadingSpinner from './components/ui/LoadingSpinner';
+import LoadingScreen from './components/ui/LoadingScreen';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 
 // Context
 import { AuthProvider } from './context/AuthContext';
@@ -16,90 +17,127 @@ import { useLanguageDetection } from './hooks/useLanguageDetection';
 // Utils
 import { initializeElectronOptimizations, shouldLoadAnalytics } from './utils/electronUtils';
 
-// Main App Component with optimizations
+// Preload critical resources
+const preloadCriticalResources = () => {
+  const criticalImages = [
+    'https://image.noelshack.com/fichiers/2024/44/3/1730323042-logom1.png',
+    'https://image.noelshack.com/fichiers/2024/44/3/1730323091-metrotech-1.jpg'
+  ];
+  
+  criticalImages.forEach(src => {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = src;
+    document.head.appendChild(link);
+  });
+};
+
+// Main App Component with comprehensive error handling
 const AppContent: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState('Initialisation...');
+  const [hasInitialized, setHasInitialized] = useState(false);
   
   // Hooks
   useVisitTracker();
   useLanguageDetection();
 
   useEffect(() => {
-    // Initialiser les optimisations Electron
-    initializeElectronOptimizations();
+    const initializeApp = async () => {
+      try {
+        setLoadingMessage('Configuration de l\'environnement...');
+        
+        // Initialiser les optimisations Electron
+        initializeElectronOptimizations();
+        
+        // Précharger les ressources critiques
+        preloadCriticalResources();
+        
+        setLoadingMessage('Chargement des services...');
+        
+        // Initialiser Google Analytics seulement en environnement web
+        if (shouldLoadAnalytics()) {
+          try {
+            if (typeof gtag !== 'undefined') {
+              gtag('config', 'GA_MEASUREMENT_ID');
+              gtag('event', 'page_view', {
+                page_title: document.title,
+                page_location: window.location.href
+              });
+            }
+          } catch (error) {
+            console.warn('Analytics initialization failed:', error);
+          }
+        }
 
-    // Initialiser Google Analytics seulement en environnement web
-    if (shouldLoadAnalytics() && typeof gtag !== 'undefined') {
-      gtag('config', 'GA_MEASUREMENT_ID');
-      gtag('event', 'page_view', {
-        page_title: document.title,
-        page_location: window.location.href
-      });
-    }
+        // Initialiser Facebook Pixel seulement en environnement web
+        if (shouldLoadAnalytics()) {
+          try {
+            if (typeof fbq !== 'undefined') {
+              fbq('init', 'YOUR_PIXEL_ID');
+              fbq('track', 'PageView');
+            }
+          } catch (error) {
+            console.warn('Facebook Pixel initialization failed:', error);
+          }
+        }
 
-    // Initialiser Facebook Pixel seulement en environnement web
-    if (shouldLoadAnalytics() && typeof fbq !== 'undefined') {
-      fbq('init', 'YOUR_PIXEL_ID');
-      fbq('track', 'PageView');
-    }
+        setLoadingMessage('Finalisation...');
+        
+        // Attendre un minimum pour éviter les flashs
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        setHasInitialized(true);
+        setIsLoading(false);
+        
+      } catch (error) {
+        console.error('App initialization failed:', error);
+        setLoadingMessage('Erreur de chargement');
+        
+        // Retry après 2 secondes
+        setTimeout(() => {
+          setIsLoading(false);
+          setHasInitialized(true);
+        }, 2000);
+      }
+    };
 
-    // Simuler le chargement initial
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
+    initializeApp();
   }, []);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 no-scrollbar">
-        <motion.div 
-          className="flex flex-col items-center"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="relative w-24 h-24 mb-8">
-            <div className="absolute inset-0 border-4 border-t-primary-500 border-r-transparent border-b-secondary-500 border-l-transparent rounded-full animate-spin"></div>
-            <div className="absolute inset-2 border-4 border-t-transparent border-r-primary-500 border-b-transparent border-l-secondary-500 rounded-full animate-spin-slow"></div>
-          </div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-center"
-          >
-            <img 
-              src="https://image.noelshack.com/fichiers/2024/44/3/1730323042-logom1.png" 
-              alt="METROTECH Logo" 
-              className="h-12 mx-auto mb-4"
-            />
-            <div className="flex items-center gap-2 text-gray-400">
-              <LoadingSpinner size="sm" aria-label="Application en cours de chargement" />
-              <span className="text-sm">Chargement...</span>
-            </div>
-          </motion.div>
-        </motion.div>
-      </div>
-    );
+  // Afficher le loading screen pendant l'initialisation
+  if (isLoading || !hasInitialized) {
+    return <LoadingScreen message={loadingMessage} />;
   }
 
   return (
-    <div className="no-scrollbar">
-      <AppRoutes />
-    </div>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="app-content"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="no-scrollbar"
+      >
+        <Suspense fallback={<LoadingScreen variant="component" message="Chargement de la page..." />}>
+          <AppRoutes />
+        </Suspense>
+      </motion.div>
+    </AnimatePresence>
   );
 };
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
