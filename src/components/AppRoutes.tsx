@@ -9,6 +9,9 @@ import Layout from '../layouts/Layout';
 import LoadingScreen from './ui/LoadingScreen';
 import ErrorBoundary from './ui/ErrorBoundary';
 
+// Auth Context
+import { useAuth as useAuthContext } from '../context/AuthContext';
+
 // Lazy loading des pages pour éviter les bundles trop lourds
 const Home = React.lazy(() => import('../pages/Home'));
 const Services = React.lazy(() => import('../pages/Services'));
@@ -55,7 +58,7 @@ const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 // Hook d'authentification avec fallback
 const useAuth = () => {
   try {
-    return require('../context/AuthContext').useAuth();
+    return useAuthContext();
   } catch (error) {
     console.error('Auth context error:', error);
     return { isAuthenticated: false };
