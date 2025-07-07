@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowLeft, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from './ui/LoadingSpinner';
+import Logo from './ui/Logo';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -60,11 +61,7 @@ const Login: React.FC = () => {
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
             className="mb-6"
           >
-            <img 
-              src="https://image.noelshack.com/fichiers/2024/44/3/1730323042-logom1.png" 
-              alt="METROTECH Logo" 
-              className="h-16 lg:h-20 mx-auto"
-            />
+            <Logo size="lg" variant="light" />
           </motion.div>
           
           <motion.div
@@ -157,7 +154,7 @@ const Login: React.FC = () => {
           >
             {isLoading ? (
               <div className="flex items-center justify-center gap-3">
-                <LoadingSpinner size="sm\" color="text-light" />
+                <LoadingSpinner size="sm" color="text-light" />
                 Connexion en cours...
               </div>
             ) : (

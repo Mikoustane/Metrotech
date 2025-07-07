@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from './Sidebar';
 import { isMobileDevice, shouldLoadAdminComponents, getBundleConfig } from '../utils/mobileDetection';
+import ErrorBoundary from './ui/ErrorBoundary';
 
 // Lazy loading des composants lourds
 const Dashboard = React.lazy(() => import('./Dashboard'));
@@ -23,6 +24,7 @@ const InternalApp: React.FC = () => {
   const { user } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
   const [bundleConfig, setBundleConfig] = useState(getBundleConfig());
+  const [hasError, setHasError] = useState(false);
 
   // Vérifier si l'utilisateur est l'admin (ID = 1)
   const isAdmin = user?.id === '1';
@@ -38,6 +40,18 @@ const InternalApp: React.FC = () => {
     window.addEventListener('resize', checkDevice);
     return () => window.removeEventListener('resize', checkDevice);
   }, []);
+
+  // Gestion d'erreur pour éviter les crashes
+  const handleComponentError = (error: Error, errorInfo: any) => {
+    console.error('Erreur dans l\'application interne:', error, errorInfo);
+    setHasError(true);
+    
+    // Auto-récupération après 3 secondes
+    setTimeout(() => {
+      setHasError(false);
+      setActiveSection('accueil');
+    }, 3000);
+  };
 
   const renderContent = () => {
     // Composant de fallback pour les fonctionnalités non disponibles sur mobile
@@ -63,158 +77,224 @@ const InternalApp: React.FC = () => {
       </div>
     );
 
-    switch (activeSection) {
-      case 'accueil':
-        if (isMobile) {
-          return (
-            <React.Suspense fallback={<LoadingComponent />}>
-              <MobileDashboard />
-            </React.Suspense>
-          );
-        }
-        
-        if (isAdmin && bundleConfig.loadAdminDashboard) {
-          return (
-            <React.Suspense fallback={<LoadingComponent />}>
-              <AdminDashboard />
-            </React.Suspense>
-          );
-        }
-        
-        if (bundleConfig.loadDashboard) {
-          return (
-            <React.Suspense fallback={<LoadingComponent />}>
-              <Dashboard />
-            </React.Suspense>
-          );
-        }
-        
-        return <MobileNotAvailable />;
+    // Composant d'erreur
+    const ErrorComponent = () => (
+      <div className="p-6 text-center">
+        <h2 className="text-xl font-bold text-red-400 mb-4">Erreur temporaire</h2>
+        <p className="text-gray-400 mb-6">
+          Une erreur est survenue. Retour automatique à l'accueil...
+        </p>
+        <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto" />
+      </div>
+    );
 
-      case 'formulaires':
-        if (!bundleConfig.loadFormCreator) {
-          return <MobileNotAvailable />;
-        }
-        return (
-          <React.Suspense fallback={<LoadingComponent />}>
-            <FormCreator />
-          </React.Suspense>
-        );
+    if (hasError) {
+      return <ErrorComponent />;
+    }
 
-      case 'historique':
-        if (!bundleConfig.loadHistorique) {
-          return <MobileNotAvailable />;
-        }
-        return (
-          <React.Suspense fallback={<LoadingComponent />}>
-            <Historique />
-          </React.Suspense>
-        );
-
-      case 'sauvegarde':
-        if (!bundleConfig.loadSauvegarde) {
-          return <MobileNotAvailable />;
-        }
-        return (
-          <React.Suspense fallback={<LoadingComponent />}>
-            <Sauvegarde />
-          </React.Suspense>
-        );
-
-      case 'connexions':
-        if (!bundleConfig.loadConnectionTracker) {
-          return <MobileNotAvailable />;
-        }
-        return (
-          <React.Suspense fallback={<LoadingComponent />}>
-            <ConnectionTracker />
-          </React.Suspense>
-        );
-
-      case 'donnees':
-        if (!bundleConfig.loadDataManager) {
-          return <MobileNotAvailable />;
-        }
-        return (
-          <React.Suspense fallback={<LoadingComponent />}>
-            <DataManager />
-          </React.Suspense>
-        );
-
-      case 'parametres':
-        if (!bundleConfig.loadSettingsManager) {
-          return <MobileNotAvailable />;
-        }
-        return (
-          <React.Suspense fallback={<LoadingComponent />}>
-            <SettingsManager />
-          </React.Suspense>
-        );
-
-      case 'actualites':
-        if (isMobile) {
-          return (
-            <React.Suspense fallback={<LoadingComponent />}>
-              <MobileNewsViewer />
-            </React.Suspense>
-          );
-        }
-        return <MobileNotAvailable />;
-
-      default:
-        return isMobile ? (
-          <React.Suspense fallback={<LoadingComponent />}>
-            <MobileDashboard />
-          </React.Suspense>
-        ) : (
-          isAdmin && bundleConfig.loadAdminDashboard ? (
-            <React.Suspense fallback={<LoadingComponent />}>
-              <AdminDashboard />
-            </React.Suspense>
-          ) : (
-            bundleConfig.loadDashboard ? (
+    try {
+      switch (activeSection) {
+        case 'accueil':
+          if (isMobile) {
+            return (
+              <React.Suspense fallback={<LoadingComponent />}>
+                <MobileDashboard />
+              </React.Suspense>
+            );
+          }
+          
+          if (isAdmin && bundleConfig.loadAdminDashboard) {
+            return (
+              <React.Suspense fallback={<LoadingComponent />}>
+                <AdminDashboard />
+              </React.Suspense>
+            );
+          }
+          
+          if (bundleConfig.loadDashboard) {
+            return (
               <React.Suspense fallback={<LoadingComponent />}>
                 <Dashboard />
               </React.Suspense>
-            ) : <MobileNotAvailable />
-          )
-        );
+            );
+          }
+          
+          return <MobileNotAvailable />;
+
+        case 'formulaires':
+          if (!bundleConfig.loadFormCreator) {
+            return <MobileNotAvailable />;
+          }
+          return (
+            <React.Suspense fallback={<LoadingComponent />}>
+              <FormCreator />
+            </React.Suspense>
+          );
+
+        case 'historique':
+          if (!bundleConfig.loadHistorique) {
+            return <MobileNotAvailable />;
+          }
+          return (
+            <React.Suspense fallback={<LoadingComponent />}>
+              <Historique />
+            </React.Suspense>
+          );
+
+        case 'sauvegarde':
+          if (!bundleConfig.loadSauvegarde) {
+            return <MobileNotAvailable />;
+          }
+          return (
+            <React.Suspense fallback={<LoadingComponent />}>
+              <Sauvegarde />
+            </React.Suspense>
+          );
+
+        case 'connexions':
+          if (!bundleConfig.loadConnectionTracker) {
+            return <MobileNotAvailable />;
+          }
+          return (
+            <React.Suspense fallback={<LoadingComponent />}>
+              <ConnectionTracker />
+            </React.Suspense>
+          );
+
+        case 'donnees':
+          if (!bundleConfig.loadDataManager) {
+            return <MobileNotAvailable />;
+          }
+          return (
+            <React.Suspense fallback={<LoadingComponent />}>
+              <DataManager />
+            </React.Suspense>
+          );
+
+        case 'parametres':
+          if (!bundleConfig.loadSettingsManager) {
+            return <MobileNotAvailable />;
+          }
+          return (
+            <React.Suspense fallback={<LoadingComponent />}>
+              <SettingsManager />
+            </React.Suspense>
+          );
+
+        case 'actualites':
+          if (isMobile) {
+            return (
+              <React.Suspense fallback={<LoadingComponent />}>
+                <MobileNewsViewer />
+              </React.Suspense>
+            );
+          }
+          return <MobileNotAvailable />;
+
+        default:
+          return isMobile ? (
+            <React.Suspense fallback={<LoadingComponent />}>
+              <MobileDashboard />
+            </React.Suspense>
+          ) : (
+            isAdmin && bundleConfig.loadAdminDashboard ? (
+              <React.Suspense fallback={<LoadingComponent />}>
+                <AdminDashboard />
+              </React.Suspense>
+            ) : (
+              bundleConfig.loadDashboard ? (
+                <React.Suspense fallback={<LoadingComponent />}>
+                  <Dashboard />
+                </React.Suspense>
+              ) : <MobileNotAvailable />
+            )
+          );
+      }
+    } catch (error) {
+      console.error('Erreur lors du rendu du contenu:', error);
+      setHasError(true);
+      return <ErrorComponent />;
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-900 overflow-hidden no-scrollbar">
-      {/* Sidebar - adapté selon l'appareil */}
-      <Sidebar 
-        activeSection={activeSection} 
-        setActiveSection={setActiveSection}
-        isMobile={isMobile}
-        bundleConfig={bundleConfig}
-      />
-      
-      <main className="flex-1 overflow-auto no-scrollbar">
-        {/* Mobile padding to account for menu button */}
-        <div className="sm:hidden h-16"></div>
-        
-        <motion.div
-          key={activeSection}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: isMobile ? 0.2 : 0.3 }}
-          className="h-full no-scrollbar"
-        >
-          {renderContent()}
-        </motion.div>
-      </main>
-
-      {/* Indicateur de version mobile */}
-      {isMobile && (
-        <div className="fixed bottom-4 right-4 bg-blue-600/90 text-white px-3 py-1 rounded-full text-xs backdrop-blur-sm">
-          📱 Version mobile
+    <ErrorBoundary
+      fallback={
+        <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+          <div className="text-center text-white">
+            <h2 className="text-xl mb-4">Erreur dans l'application interne</h2>
+            <p className="text-gray-400 mb-4">Une erreur inattendue s'est produite.</p>
+            <button 
+              onClick={() => {
+                setHasError(false);
+                setActiveSection('accueil');
+              }}
+              className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Retour à l'accueil
+            </button>
+          </div>
         </div>
-      )}
-    </div>
+      }
+    >
+      <div className="flex h-screen bg-gray-900 overflow-hidden no-scrollbar">
+        {/* Sidebar - adapté selon l'appareil */}
+        <ErrorBoundary
+          fallback={
+            <div className="w-64 bg-gray-800 p-4 text-white">
+              <p>Erreur sidebar</p>
+            </div>
+          }
+        >
+          <Sidebar 
+            activeSection={activeSection} 
+            setActiveSection={setActiveSection}
+            isMobile={isMobile}
+            bundleConfig={bundleConfig}
+          />
+        </ErrorBoundary>
+        
+        <main className="flex-1 overflow-auto no-scrollbar">
+          {/* Mobile padding to account for menu button */}
+          <div className="sm:hidden h-16"></div>
+          
+          <motion.div
+            key={activeSection}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: isMobile ? 0.2 : 0.3 }}
+            className="h-full no-scrollbar"
+          >
+            <ErrorBoundary
+              fallback={
+                <div className="p-6 text-center">
+                  <h2 className="text-xl font-bold text-red-400 mb-4">Erreur de composant</h2>
+                  <p className="text-gray-400 mb-4">
+                    Le composant "{activeSection}" a rencontré une erreur.
+                  </p>
+                  <button 
+                    onClick={() => setActiveSection('accueil')}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Retour à l'accueil
+                  </button>
+                </div>
+              }
+            >
+              {renderContent()}
+            </ErrorBoundary>
+          </motion.div>
+        </main>
+
+        {/* Indicateur de version mobile */}
+        {isMobile && (
+          <div className="fixed bottom-4 right-4 bg-blue-600/90 text-white px-3 py-1 rounded-full text-xs backdrop-blur-sm">
+            📱 Version mobile
+          </div>
+        )}
+      </div>
+    </ErrorBoundary>
   );
 };
 
